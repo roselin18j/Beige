@@ -9,7 +9,6 @@ import ServiceStrip from "./components/ServiceStrip.jsx";
 import Shop from "./components/Shop.jsx";
 import Closing from "./components/Closing.jsx";
 import Footer from "./components/Footer.jsx";
-
 import Modal from "./components/Modal.jsx";
 import CartModal from "./components/modals/CartModal.jsx";
 import WishlistModal from "./components/modals/WishlistModal.jsx";
