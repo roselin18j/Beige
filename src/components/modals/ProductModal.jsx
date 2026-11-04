@@ -22,8 +22,7 @@ export default function ProductModal({ productId, onAdd, onClose }) {
   };
 
   return (
-    // The modal itself is height-limited and does NOT scroll.
-    // Only the inner container scrolls, so the close button stays put.
+
     <div className="relative flex max-h-[90vh] w-full flex-col overflow-hidden">
       <button
         type="button"
@@ -34,10 +33,10 @@ export default function ProductModal({ productId, onAdd, onClose }) {
         <X size={20} />
       </button>
 
-      {/* Scroll area */}
+
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="flex flex-col lg:flex-row lg:items-stretch">
-          {/* Image */}
+
           <div className="relative aspect-[4/3] w-full shrink-0 bg-cream lg:aspect-auto lg:min-h-[480px] lg:w-1/2">
             <img
               src={product.image}
@@ -56,7 +55,7 @@ export default function ProductModal({ productId, onAdd, onClose }) {
               {product.name}
             </h2>
 
-            {/* Variants */}
+ 
             <div className="mt-6">
               <p className="mb-3 text-xs text-muted">Select size / shade</p>
 
@@ -84,7 +83,7 @@ export default function ProductModal({ productId, onAdd, onClose }) {
               </div>
             </div>
 
-            {/* Price */}
+
             <div className="mt-5">
               <p className="font-serif text-2xl">
                 {money(selectedVariant.price)}
@@ -98,7 +97,6 @@ export default function ProductModal({ productId, onAdd, onClose }) {
               for your daily routine.
             </p>
 
-            {/* Quantity */}
             <div className="mt-6 flex items-center justify-between">
               <span className="text-sm text-ink">Quantity</span>
 
@@ -123,7 +121,7 @@ export default function ProductModal({ productId, onAdd, onClose }) {
               </div>
             </div>
 
-            {/* Add to bag */}
+
             <button
               type="button"
               onClick={handleAddToBag}

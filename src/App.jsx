@@ -18,9 +18,7 @@ import SkinTestModal from "./components/modals/SkinTestModal.jsx";
 import TryOnModal from "./components/modals/TryOnModal";
 
 export default function App() {
-  // ========================================
-  // TEMPORARY USER DATA
-  // ========================================
+
 
   const user = {
     id: "user_123",
@@ -29,15 +27,9 @@ export default function App() {
     mobile: "",
   };
 
-  // ========================================
-  // TEMPORARY ORDERS DATA
-  // ========================================
+
 
   const orders = [];
-
-  // ========================================
-  // STATES
-  // ========================================
 
   const [category, setCategory] = useState("All products");
   const [search, setSearch] = useState("");
@@ -46,9 +38,6 @@ export default function App() {
   const [wishlist, setWishlist] = useState([]);
   const [modal, setModal] = useState(null);
 
-  // ========================================
-  // MODAL FUNCTIONS
-  // ========================================
 
   const accountModalIds = [
     "accountModal",
@@ -76,26 +65,13 @@ export default function App() {
     setModal(null);
   };
 
-  // ========================================
-  // CART FUNCTIONS
-  // ========================================
 
-  /**
-   * Add product variant to cart.
-   * Cart key format: productId:variantId
-   * Cart value: quantity
-   */
   const addToCart = (productId, variantId, quantity = 1) => {
-    // Prevent objects from being passed accidentally
+
     if (
       typeof productId === "object" ||
       typeof variantId === "object"
     ) {
-      console.error("Invalid addToCart arguments:", {
-        productId,
-        variantId,
-        quantity,
-      });
 
       return false;
     }
@@ -132,9 +108,6 @@ export default function App() {
     return true;
   };
 
-  // ========================================
-  // ADD DEFAULT PRODUCT VARIANT
-  // ========================================
 
   const addDefaultVariant = (productId, openCart = true) => {
     const product = products.find(
@@ -168,9 +141,6 @@ export default function App() {
     return true;
   };
 
-  // ========================================
-  // WISHLIST QUICK ADD
-  // ========================================
 
   const addWishlistDefaultVariant = (productId) => {
     const success = addDefaultVariant(productId, false);
@@ -182,10 +152,6 @@ export default function App() {
     return success;
   };
 
-  // ========================================
-  // REMOVE CART ITEM
-  // ========================================
-
   const removeFromCart = (key) => {
     setCart((current) => {
       const next = { ...current };
@@ -195,10 +161,6 @@ export default function App() {
       return next;
     });
   };
-
-  // ========================================
-  // UPDATE CART QUANTITY
-  // ========================================
 
   const updateCartQuantity = (key, quantity) => {
     const nextQuantity = Number(quantity);
@@ -213,9 +175,6 @@ export default function App() {
     }));
   };
 
-  // ========================================
-  // WISHLIST FUNCTIONS
-  // ========================================
 
   const toggleWishlist = (id) => {
     setWishlist((current) =>
@@ -225,9 +184,6 @@ export default function App() {
     );
   };
 
-  // ========================================
-  // ACCOUNT FUNCTIONS
-  // ========================================
 
   const handleLogout = () => {
     alert("Authentication logout API will be connected later.");
@@ -240,25 +196,15 @@ export default function App() {
     alert("Profile update API will be connected later.");
   };
 
-  // ========================================
-  // HEADER BAG COUNT
-  // ========================================
-
   const bagCount = Object.values(cart).reduce(
     (total, quantity) => total + Number(quantity || 0),
     0
   );
 
-  // ========================================
-  // DEBUG CART
-  // ========================================
 
   console.log("CART DATA:", cart);
   console.log("BAG COUNT:", bagCount);
 
-  // ========================================
-  // PRODUCT FILTERING
-  // ========================================
 
   const visibleProducts = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -271,15 +217,9 @@ export default function App() {
     );
   }, [category, search]);
 
-  // ========================================
-  // MODAL CONTENT
-  // ========================================
 
   const renderModal = () => {
     switch (modal?.type) {
-      // ------------------------------------
-      // CART
-      // ------------------------------------
 
       case "cart":
         return (
@@ -290,10 +230,6 @@ export default function App() {
             onClose={close}
           />
         );
-
-      // ------------------------------------
-      // ACCOUNT / PROFILE / ORDERS / WISHLIST
-      // ------------------------------------
 
       case "account":
         return (
@@ -311,9 +247,6 @@ export default function App() {
           />
         );
 
-      // ------------------------------------
-      // PRODUCT DETAILS
-      // ------------------------------------
 
       case "product":
         return (
@@ -334,9 +267,6 @@ export default function App() {
           />
         );
 
-      // ------------------------------------
-      // SKIN TEST
-      // ------------------------------------
 
       case "skinTest":
         return (
@@ -370,25 +300,16 @@ export default function App() {
           />
         );
 
-      // ------------------------------------
-      // AI TRY ON
-      // ------------------------------------
 
       case "tryOn":
         return <TryOnModal onClose={close} />;
 
-      // ------------------------------------
-      // DEFAULT
-      // ------------------------------------
 
       default:
         return null;
     }
   };
 
-  // ========================================
-  // APP UI
-  // ========================================
 
   return (
     <>
@@ -421,25 +342,23 @@ export default function App() {
 
       <Footer />
 
-      {/* GLOBAL MODAL */}
-
-     
-<Modal
-  isOpen={!!modal}
-  onClose={close}
-  size={
-    modal?.type === "product"
-      ? "lg"
-      : modal?.type === "tryOn"
-      ? "md"
-      : "md"
-  }
->
-  {renderModal()}
-</Modal>
 
 
-      {/* GLOBAL TOASTER */}
+      <Modal
+        isOpen={!!modal}
+        onClose={close}
+        size={
+          modal?.type === "product"
+            ? "lg"
+            : modal?.type === "tryOn"
+              ? "md"
+              : "md"
+        }
+      >
+        {renderModal()}
+      </Modal>
+
+
       <Toaster position="top-right" richColors />
     </>
   );

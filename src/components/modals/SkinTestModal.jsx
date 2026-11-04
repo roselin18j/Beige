@@ -93,7 +93,6 @@ export default function SkinTestModal({ onClose, onAdd }) {
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Answer handling
   const handleAnswer = (questionIndex, answer) => {
     setAnswers((prev) => ({
       ...prev,
@@ -102,14 +101,14 @@ export default function SkinTestModal({ onClose, onAdd }) {
 
   };
 
-  // Stop camera
+
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setCameraOpen(false);
   };
 
-  // Cleanup camera and photo
+
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -120,7 +119,7 @@ export default function SkinTestModal({ onClose, onAdd }) {
     };
   }, [photo]);
 
-  // Start camera
+
   const startCamera = async () => {
     try {
       setCameraError("");
@@ -141,7 +140,7 @@ export default function SkinTestModal({ onClose, onAdd }) {
     }
   };
 
-  // Attach camera stream
+
   useEffect(() => {
     if (cameraOpen && videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
