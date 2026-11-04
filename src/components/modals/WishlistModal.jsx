@@ -117,7 +117,7 @@ export default function WishlistModal({
         </div>
 
         {/* User details */}
-        <div className="mt-3 max-[550px]:mt-2 border-t border-[#DFD2C2] pt-5">
+        <div className="mt-3 max-[550px]:mt-2 border-t border-[#DFD2C2] pt-5 max-[550px]:pt-3">
           <p className="text-sm font-semibold">
             Hello, {user?.name?.split(" ")[0] || "there"}
           </p>
@@ -128,7 +128,7 @@ export default function WishlistModal({
         </div>
 
         {/* Tabs */}
-        <div className="mt-6 flex border-b border-[#DFD2C2]">
+        <div className="mt-6 flex border-b border-[#DFD2C2] max-[550px]:mt-5 max-[450px]:mt-4">
           {[
             { id: "accountModal", label: "Profile" },
             { id: "pastOrderModal", label: "Past orders" },
@@ -188,7 +188,7 @@ export default function WishlistModal({
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 placeholder="Enter your full name"
-                className="w-full border border-[#DCCDBB] bg-white px-3 py-3 text-sm outline-none transition focus:border-[#72543D]"
+                className="w-full border border-[#DCCDBB] bg-white px-3 py-3 max-[550px]:py-2 text-sm outline-none transition focus:border-[#72543D]"
               />
             </div>
 
@@ -237,7 +237,7 @@ export default function WishlistModal({
                 }
                 required
                 placeholder="Enter your mobile number"
-                className="w-full border border-[#DCCDBB] bg-white px-3 py-3 text-sm outline-none transition focus:border-[#72543D]"
+                className="w-full border border-[#DCCDBB] bg-white px-3 py-3 max-[550px]:py-2 text-sm outline-none transition focus:border-[#72543D]"
               />
             </div>
 

@@ -373,33 +373,33 @@ const handleContinue = () => {
         <>
           <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 max-[768px]:px-3 max-[768px]:pb-6">
 
-            <p className="mb-3 mt-7 max-[768px]:mt-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#72543D]">
+            <p className="mb-3 mt-7 max-[991px]:mt-4 max-[768px]:mt-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#72543D]">
               Your care profile
             </p>
 
-            <h2 className="mb-6 font-serif text-3xl">
+            <h2 className="mb-6 font-serif text-[30px] max-[991px]:text-[26px] max-[768px]:text-[22px] max-[550px]:text-[20px] max-[450px]:text-[18px]">
               A ritual for you
             </h2>
 
             {/* PROFILE CARDS */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
 
-              <div className="border border-[#E2D4C3] bg-[#F5EEE2] p-4">
+              <div className="border border-[#E2D4C3] bg-[#F5EEE2] p-4 max-[881px]:p-3">
                 <p className="text-xs text-[#806D5B]">
                   Skin type · from answers
                 </p>
 
-                <h3 className="mt-3 text-lg font-semibold">
+                <h3 className="mt-3 text-[20px] max-[768px]:text-[18px] max-[550px]:text-[16px]  font-semibold leading-6">
                   {getSkinType()}
                 </h3>
               </div>
 
-              <div className="border border-[#E2D4C3] bg-[#F5EEE2] p-4">
+              <div className="border border-[#E2D4C3] bg-[#F5EEE2] p-4 max-[881px]:p-3">
                 <p className="text-xs text-[#806D5B]">
                   Hair type · from answers
                 </p>
 
-                <h3 className="mt-3 text-lg font-semibold">
+                <h3 className="mt-3 text-[20px] max-[768px]:text-[18px] max-[550px]:text-[16px] font-semibold leading-6">
                   {hairType}
                 </h3>
 
@@ -408,12 +408,12 @@ const handleContinue = () => {
                 </p>
               </div>
 
-              <div className="border border-[#E2D4C3] bg-[#F5EEE2] p-4">
+              <div className="border border-[#E2D4C3] bg-[#F5EEE2] p-4 max-[881px]:p-3">
                 <p className="text-xs text-[#806D5B]">
                   Face shape · photo estimate
                 </p>
 
-                <h3 className="mt-3 text-lg font-semibold">
+                <h3 className="mt-3 text-[20px] max-[768px]:text-[18px] max-[550px]:text-[16px]  font-semibold leading-6">
                   Not assessed
                 </h3>
 
@@ -423,7 +423,7 @@ const handleContinue = () => {
               </div>
             </div>
 
-            <p className="text-sm leading-6 text-[#806D5B]">
+            <p className="text-sm leading-6 text-[#806D5B] mt-2">
               This care profile is based on your answers. Photos alone cannot
               confirm oil balance, sensitivity or scalp condition.
             </p>
@@ -434,7 +434,7 @@ const handleContinue = () => {
             </div>
 
             {/* RECOMMENDATIONS */}
-            <h3 className="mb-5 mt-5 text-base font-medium">
+            <h3 className="my-5 max-[768px]:my-2 text-base font-medium">
               Explore care for your routine
             </h3>
 
@@ -444,7 +444,7 @@ const handleContinue = () => {
               return (
                 <div
                   key={product.name}
-                  className="border-b border-[#E2D4C3] py-5"
+                  className="border-b border-[#E2D4C3] py-5 max-[768px]:py-4 max-[550px]:py-3"
                 >
                   <h4 className="text-sm font-semibold">
                     {product.name}

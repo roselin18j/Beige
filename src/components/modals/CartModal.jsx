@@ -53,13 +53,13 @@ export default function CartModal({
     return (
       <div className="text-ink">
         <header className="flex items-center justify-between border-b border-line px-6 py-4 sm:px-7">
-          <h2 className="font-serif text-2xl tracking-tight sm:text-[28px]">
+          <h2 className="font-serif text-2xl tracking-tight max-[550px]:text-[20px] max-[450px]:text-[18px]">
             Your beauty bag
           </h2>
 
           <div
             data-drag-handle
-            className="flex cursor-grab touch-none justify-center rounded-full p-2 text-mocha/60 transition hover:bg-[#F2EAE0] active:cursor-grabbing"
+            className="flex max-[550px]:hidden cursor-grab touch-none justify-center rounded-full p-2 text-mocha/60 transition hover:bg-[#F2EAE0] active:cursor-grabbing"
           >
             <GripHorizontal size={23} strokeWidth={1.3} />
           </div>
@@ -117,9 +117,9 @@ export default function CartModal({
   );
 
   return (
-    <div className="flex max-h-[90vh] flex-col text-ink">
+    <div className="flex max-h-[90vh] flex-col text-ink overflow-y-auto">
 
-      <header className="shrink-0 border-b border-line px-6 pb-4 pt-3 sm:px-7">
+      <header className="shrink-0 border-b border-line px-6 pb-4 pt-3 max-[768px]:px-3 max-[768px]:pt-4">
         <div className="mb-2 flex items-start justify-end gap-2">
   
           <div
@@ -156,26 +156,7 @@ export default function CartModal({
         </div>
       </header>
 
-
-      <div className="shrink-0 px-6 pt-4 sm:px-7">
-        <div className="rounded-lg bg-[#f1e8dc] px-4 py-3">
-          <p className="text-[11px] leading-relaxed text-mocha">
-            {remaining === 0
-              ? "Lovely! Your order qualifies for free shipping."
-              : `Add ${money(remaining)} more for complimentary shipping.`}
-          </p>
-
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-[#dfd0bd]">
-            <div
-              className="h-full rounded-full bg-mocha transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 sm:px-7">
+      <div className="min-h-40 flex-1 overflow-y-auto px-6 max-[768px]:px-3 max-[768px]:pt-4">
         <div className="divide-y divide-line">
           {lines.map(({ key, product: p, variant, qty }) => (
             <article key={key} className="flex gap-3 py-5 sm:gap-4">
@@ -259,8 +240,24 @@ export default function CartModal({
         </div>
       </div>
 
+      <div className="shrink-0 px-6 mb-4 pt-4 max-[768px]:px-3 max-[768px]:pt-4">
+        <div className="rounded-lg bg-[#f1e8dc] px-4 py-3">
+          <p className="text-[11px] leading-relaxed text-mocha">
+            {remaining === 0
+              ? "Lovely! Your order qualifies for free shipping."
+              : `Add ${money(remaining)} more for complimentary shipping.`}
+          </p>
 
-      <footer className="shrink-0 border-t border-line bg-[#fcfaf6] px-6 pb-5 pt-4 sm:px-7">
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-[#dfd0bd]">
+            <div
+              className="h-full rounded-full bg-mocha transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <footer className="shrink-0 border-t border-line bg-[#fcfaf6] px-6 pb-5 pt-4 max-[768px]:px-3 max-[768px]:pt-4">
         <div className="space-y-2 text-[12px]">
           <div className="flex items-center justify-between text-muted">
             <span>Subtotal</span>
