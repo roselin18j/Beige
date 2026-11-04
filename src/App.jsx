@@ -202,8 +202,6 @@ export default function App() {
   );
 
 
-  console.log("CART DATA:", cart);
-  console.log("BAG COUNT:", bagCount);
 
 
   const visibleProducts = useMemo(() => {
