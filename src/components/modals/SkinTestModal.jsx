@@ -310,9 +310,9 @@ const handleContinue = () => {
     <div className="flex max-h-[90vh] flex-col overflow-hidden bg-[#FCFAF6] text-[#3F352D]">
 
       {/* HEADER */}
-      <header className="sticky top-0 z-20 shrink-0 bg-[#FCFAF6] px-6 pt-5 sm:px-8">
+      <header className="sticky top-0 z-20 shrink-0 bg-[#FCFAF6] px-6 pt-5 max-[768px]:px-3 max-[768px]:pt-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-serif text-3xl font-normal sm:text-[34px]">
+          <h2 className="font-serif text-2xl tracking-tight max-[550px]:text-[20px] max-[450px]:text-[18px]">
             Find your care ritual
           </h2>
 
@@ -327,8 +327,8 @@ const handleContinue = () => {
         </div>
 
         <div
-          data-drag-handle
-          className="flex cursor-grab touch-none justify-center text-[#A58B70] active:cursor-grabbing"
+          data-drag-handle 
+          className="flex cursor-grab  max-[550px]:hidden touch-none justify-end pr-2 text-[#A58B70] active:cursor-grabbing"
         >
           <GripHorizontal size={23} strokeWidth={1.3} />
         </div>
@@ -344,14 +344,14 @@ const handleContinue = () => {
               return (
                 <div
                   key={label}
-                  className={`flex items-center gap-2 text-xs ${
+                  className={`flex items-center gap-2 text-xs max-[768px]:text-[10px] max-[768px]:gap-1 ${
                     active || completed
                       ? "font-medium text-[#72543D]"
                       : "text-[#A58B70]"
                   }`}
                 >
                   <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full border ${
+                    className={`flex h-6 w-6 max-[768px]:h-5 max-[768px]:w-5 items-center justify-center rounded-full border ${
                       active || completed
                         ? "border-[#72543D] bg-[#72543D] text-white"
                         : "border-[#D6C2A8]"
@@ -371,9 +371,9 @@ const handleContinue = () => {
       {/* CARE PROFILE */}
       {showProfile ? (
         <>
-          <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 sm:px-8">
+          <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 max-[768px]:px-3 max-[768px]:pb-6">
 
-            <p className="mb-3 mt-7 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#72543D]">
+            <p className="mb-3 mt-7 max-[768px]:mt-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#72543D]">
               Your care profile
             </p>
 
@@ -518,20 +518,21 @@ const handleContinue = () => {
       ) : (
         <>
           {/* QUESTIONNAIRE */}
-          <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 sm:px-8">
+          <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 max-[768px]:px-3 max-[768px]:pb-6">
 
 
 
             {/* STEP 1 - SKIN TEST */}
             {step === 1 && (
               <>
-                <p className="mb-8 text-sm leading-6 text-[#806D5B]">
+                <p className="mb-6 max-[768px]:mb-4 text-sm leading-6 text-[#806D5B]">
                   Tell us how your skin feels during an ordinary day.
                 </p>
 
                 <div className="space-y-8">
                   {skinQuestions.map((item, index) => (
                     <section key={item.question}>
+
                       <h3 className="mb-5 text-[15px] font-medium leading-6">
                         {item.question}
                         <span className="ml-1 text-red-600">*</span>
@@ -541,7 +542,7 @@ const handleContinue = () => {
                         {item.options.map((option) => (
                           <label
                             key={option}
-                            className={`flex min-h-12 cursor-pointer items-center gap-3 border px-4 py-3 text-sm transition ${
+                            className={`flex min-h-12 cursor-pointer items-center gap-3 border px-4 py-3 text-sm mb-3 transition ${
                               answers[`1-${index}`] === option
                                 ? "border-[#72543D] bg-[#F5EEE5]"
                                 : "border-[#E2D4C3] hover:bg-[#F8F3EC]"
@@ -583,7 +584,7 @@ const handleContinue = () => {
                         {item.options.map((option) => (
                           <label
                             key={option}
-                            className={`flex min-h-12 cursor-pointer items-center gap-3 border px-4 py-3 text-sm transition ${
+                            className={`flex min-h-12 cursor-pointer items-center gap-3 border px-4 py-3 text-sm  mb-3 transition ${
                               answers[`2-${index}`] === option
                                 ? "border-[#72543D] bg-[#F5EEE5]"
                                 : "border-[#E2D4C3] hover:bg-[#F8F3EC]"
@@ -609,7 +610,7 @@ const handleContinue = () => {
             {/* STEP 3 - PHOTO */}
             {step === 3 && (
               <>
-                <p className="mb-6 text-sm leading-7 text-[#806D5B]">
+                <p className="mb-6 text-sm leading-7 max-[550px]:leading-5 text-[#806D5B]">
                   Use a clear front-facing photo in natural light, with your face
                   and hair visible. For try-on, avoid filters and heavy makeup.
                 </p>
@@ -713,12 +714,12 @@ const handleContinue = () => {
                   </p>
                 )}
 
-                <p className="mt-6 text-xs leading-5 text-[#806D5B]">
+                <p className="mt-6 text-xs leading-5 max-[550px]:leading-4 text-[#806D5B] ">
                   Beige does not save the photo to your account. It is sent to the
                   AI provider only when you request an AI feature.
                 </p>
 
-                <div className="mt-1 border border-[#E2D4C3] bg-[#F0E6D6] px-4 py-4 text-sm leading-6 text-[#806D5B]">
+                <div className="mt-2 max-[550px]:leading-5 border border-[#E2D4C3] bg-[#F0E6D6] px-4 py-4 text-sm leading-6 max-[550px]:text-[14px] text-[#806D5B]">
                   AI photo features are awaiting activation. The skin and hair
                   questionnaire still gives you a care profile.
                 </div>
@@ -727,7 +728,7 @@ const handleContinue = () => {
           </main>
 
           {/* QUESTIONNAIRE FOOTER */}
-          <footer className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between bg-[#FCFAF6] px-6 py-5 sm:px-8">
+          <footer className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between bg-[#FCFAF6] px-6 py-5 max-[768px]:px-3 max-[768px]:pb-6">
 
             {step > 1 ? (
               <button
@@ -745,7 +746,7 @@ const handleContinue = () => {
             <button
               type="button"
               onClick={handleContinue}
-              className="bg-[#72543D] px-7 py-4 text-xs text-white transition hover:bg-[#5D4330]"
+              className="bg-[#72543D] px-7 py-4 max-[768px]:px-3 max-[768px]:py-3 text-xs text-white transition hover:bg-[#5D4330]"
             >
               {step === 1
                 ? "Continue to hair test"

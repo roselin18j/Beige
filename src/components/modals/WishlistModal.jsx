@@ -94,7 +94,7 @@ export default function WishlistModal({
       <div className="shrink-0 px-6 pt-5 max-[991px]:px-3">
 
         <div className="flex items-center justify-between">
-          <h2 className="font-serif text-2xl tracking-tight sm:text-3xl">
+          <h2 className="font-serif text-2xl tracking-tight max-[550px]:text-[20px] max-[450px]:text-[18px]">
             My Beige account
           </h2>
 
@@ -110,14 +110,14 @@ export default function WishlistModal({
 
         {/* Drag handle */}
         <div
-          data-drag-handle
-          className="mt-1 flex cursor-grab touch-none justify-center text-mocha/60 active:cursor-grabbing"
+          data-drag-handle 
+          className="max-[550px]:hidden mt-1 flex cursor-grab touch-none justify-center text-mocha/60 active:cursor-grabbing"
         >
           <GripHorizontal size={20} strokeWidth={1.3} />
         </div>
 
         {/* User details */}
-        <div className="mt-3 border-t border-[#DFD2C2] pt-5">
+        <div className="mt-3 max-[550px]:mt-2 border-t border-[#DFD2C2] pt-5">
           <p className="text-sm font-semibold">
             Hello, {user?.name?.split(" ")[0] || "there"}
           </p>
@@ -161,7 +161,7 @@ export default function WishlistModal({
           <form onSubmit={handleProfileSubmit} className="space-y-5">
 
             <div>
-              <h3 className="text-[17px] font-medium">
+              <h3 className="text-[17px] max-[550px]:text-[15px] max-[450px]:text-[14px]">
                 Complete your registration
               </h3>
 
@@ -278,7 +278,7 @@ export default function WishlistModal({
         {activeTab === "pastOrderModal" && (
           <>
             <div className="flex items-center justify-between">
-              <h3 className="text-[17px]">
+              <h3 className="text-[17px] max-[550px]:text-[15px] max-[450px]:text-[14px]">
                 Your past orders
               </h3>
 
@@ -300,7 +300,7 @@ export default function WishlistModal({
                   className="mb-3 text-[#3F352D]"
                 />
 
-                <p className="text-[17px] font-semibold">
+                <p className="text-[17px] font-semibold max-[550px]:text-[15px] max-[450px]:text-[14px]">
                   No orders yet
                 </p>
 
@@ -350,7 +350,7 @@ export default function WishlistModal({
         {/* WISHLIST TAB */}
         {activeTab === "wishlistModal" && (
           <>
-            <h3 className="text-[17px]">
+            <h3 className="text-[17px] max-[550px]:text-[15px] max-[450px]:text-[14px]">
               Your saved favourites
             </h3>
 
@@ -363,7 +363,7 @@ export default function WishlistModal({
                   className="mb-3 text-[#3F352D]"
                 />
 
-                <p className="text-[17px] font-semibold">
+                <p className="text-[17px] font-semibold max-[550px]:text-[15px] max-[450px]:text-[14px]">
                   Your wishlist is waiting
                 </p>
 
