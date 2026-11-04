@@ -29,7 +29,6 @@ export default function WishlistModal({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Convert wishlist product IDs into product objects
   const items = wishlist
     .map((id) => products.find((p) => p.id === id))
     .filter(Boolean);
