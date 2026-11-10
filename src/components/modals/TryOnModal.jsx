@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Camera, Upload, ImagePlus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { env } from "../../utils/env";
+
 
 const lipColours = [
   { id: "none", name: "No lipstick", color: null },
@@ -185,7 +187,7 @@ export default function TryOnModal({
       formData.append("lipColor", lip);
       formData.append("foundationShade", foundation);
 
-      const response = await fetch("http://localhost:3000/makeupBaseAnalyze", {
+      const response = await fetch(`${env.api_base_url}/makeupBaseAnalyze`, {
         method: "POST",
         body: formData,
       });

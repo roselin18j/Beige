@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+// import { api_base_url } from "../../utils/env"
+import { env } from "../../utils/env";
 import {
   X,
   GripHorizontal,
@@ -204,82 +206,6 @@ export default function SkinTestModal({ onClose, onAdd }) {
 
 
 
-  // const handleContinue = async () => {
-  //   if (step === 1) {
-  //     const unanswered = skinQuestions.some(
-  //       (_, index) => !answers[`1-${index}`]
-  //     );
-
-  //     if (unanswered) {
-  //       toast.error("Please answer all skin questions before continuing.");
-  //       return;
-  //     }
-
-  //     setStep(2);
-  //     return;
-  //   }
-
-  //   if (step === 2) {
-  //     const unanswered = hairQuestions.some(
-  //       (_, index) => !answers[`2-${index}`]
-  //     );
-
-  //     if (unanswered) {
-  //       toast.error("Please answer all hair questions before continuing.");
-  //       return;
-  //     }
-
-  //     setStep(3);
-  //     return;
-  //   }
-
-  //   try {
-  //     const questionAnswerArray = getQuestionAnswerArray();
-
-  //     console.log("USER QUESTION ANSWERS:", questionAnswerArray);
-  //     console.log("USER PHOTO:", photo);
-
-  //     if (!photo || !photo.file) {
-  //       toast.error("Please upload your face image.");
-  //       return;
-  //     }
-
-  //     const formData = new FormData();
-
-  //     formData.append("image", photo.file);
-  //     formData.append("answers", JSON.stringify(questionAnswerArray));
-
-  //     const response = await fetch("http://localhost:3000/skinAnalyze", {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-
-  //     const result = await response.json();
-
-  //     if (!response.ok || !result.success) {
-  //       throw new Error(result.message || "Skin analysis failed.");
-  //     }
-
-  //     console.log("SKIN ANALYSIS RESULT:", result);
-  //     console.log("result.data", result.data);
-
-  //     setAnalysisResult(result.data);
-
-  //     toast.success("Your skin analysis completed successfully.");
-
-  //     stopCamera();
-  //     setShowProfile(true);
-  //   } catch (error) {
-  //     console.error("Skin analysis error:", error);
-
-  //     toast.error(
-  //       error.message || "Unable to analyze your image. Please try again."
-  //     );
-  //   }
-  // };
-
-
-
   const handleContinue = async () => {
     if (step === 1) {
       const unanswered = skinQuestions.some(
@@ -326,7 +252,7 @@ export default function SkinTestModal({ onClose, onAdd }) {
       formData.append("image", photo.file);
       formData.append("answers", JSON.stringify(questionAnswerArray));
 
-      const response = await fetch("http://localhost:3000/skinAnalyze", {
+      const response = await fetch(`${env.api_base_url}/skinAnalyze`, {
         method: "POST",
         body: formData,
       });
