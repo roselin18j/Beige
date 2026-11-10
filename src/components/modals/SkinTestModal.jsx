@@ -392,18 +392,19 @@ export default function SkinTestModal({ onClose, onAdd }) {
   const dynamicProducts = AnalysisResult?.recommendedProducts || [];
   const disclaimer = AnalysisResult?.disclaimer || "";
 
-  const handleAddToBag = (productName) => {
-    if (addedProducts.includes(productName)) return;
+  const handleAddToBag = (product) => {
+    const productKey = String(product?._id || product?.productname || "");
+    if (!productKey || addedProducts.includes(productKey)) return;
 
     if (!onAdd) {
       toast.error("Cart is not connected.");
       return;
     }
 
-    const success = onAdd(productName);
+    const success = onAdd(product);
 
     if (success) {
-      setAddedProducts((prev) => [...prev, productName]);
+      setAddedProducts((prev) => [...prev, productKey]);
     }
   };
 
@@ -609,7 +610,8 @@ export default function SkinTestModal({ onClose, onAdd }) {
             )}
 
             {dynamicProducts.map((product) => {
-              const isAdded = addedProducts.includes(product.productname);
+              const productKey = String(product._id || product.productname || "");
+              const isAdded = addedProducts.includes(productKey);
 
               return (
                 <div
@@ -627,7 +629,7 @@ export default function SkinTestModal({ onClose, onAdd }) {
 
                     <button
                       type="button"
-                      onClick={() => handleAddToBag(product.productname)}
+                      onClick={() => handleAddToBag(product)}
                       disabled={isAdded}
                       className={`shrink-0 border px-4 py-3 text-xs transition ${isAdded
                         ? "border-black bg-black text-white"

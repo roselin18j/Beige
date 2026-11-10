@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { Search } from "lucide-react";
-import { categories } from "../data/products.js";
 import ProductCard from "./ProductCard.jsx";
 
 export default function Shop({
@@ -9,6 +8,7 @@ export default function Shop({
   search,
   onSearch,
   products,
+  categories = ["All products"],
   wishlist,
   onAdd,
   onToggleWish,
@@ -103,10 +103,6 @@ export default function Shop({
         )}
       </div>
 
-      <p className="mt-8 text-center text-[10px] text-muted">
-        Preview collection · Sample products and prices. Product images are
-        illustrative.
-      </p>
     </section>
   );
 }

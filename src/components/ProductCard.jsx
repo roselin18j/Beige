@@ -8,6 +8,9 @@ export function ProductArt({ product }) {
       src={product.image}
       alt={product.name}
       loading="lazy"
+      onError={(event) => {
+        event.currentTarget.style.visibility = "hidden";
+      }}
       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
     />
   );

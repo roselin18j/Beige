@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { products, money } from "../../data/products.js";
+import { money } from "../../data/products.js";
 import {
   Heart,
   X,
@@ -15,6 +15,7 @@ export default function WishlistModal({
   user,
   orders = [],
   wishlist,
+  products = [],
   onAdd,
   onView,
   onToggleWish,
@@ -30,7 +31,7 @@ export default function WishlistModal({
   const [success, setSuccess] = useState("");
 
   const items = wishlist
-    .map((id) => products.find((p) => p.id === id))
+    .map((id) => products.find((p) => String(p.id) === String(id)))
     .filter(Boolean);
 
   const email = user?.email || "";

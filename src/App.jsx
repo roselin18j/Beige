@@ -1,6 +1,6 @@
 
-import { useMemo, useState } from "react";
-import { products } from "./data/products.js";
+import { useEffect, useMemo, useState } from "react";
+import { getallProduct } from "./data/products.js";
 import { Toaster, toast } from "sonner";
 
 import Header from "./components/Header.jsx";
@@ -34,8 +34,19 @@ export default function App() {
   const [search, setSearch] = useState("");
 
   const [cart, setCart] = useState({});
+  const [products, setProducts] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [modal, setModal] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    getallProduct().then((loadedProducts) => {
+      if (active) setProducts(loadedProducts);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
 
   const accountModalIds = [
@@ -212,7 +223,14 @@ export default function App() {
           product.category === category) &&
         product.name.toLowerCase().includes(term)
     );
-  }, [category, search]);
+  }, [category, search, products]);
+
+  const categories = useMemo(
+    () => ["All products", ...new Set(products.map((product) => product.category).filter(Boolean))],
+    [products]
+  );
+
+  console.log('products------------', products)
 
 
   const renderModal = () => {
@@ -222,6 +240,7 @@ export default function App() {
         return (
           <CartModal
             cart={cart}
+            products={products}
             onRemove={removeFromCart}
             onUpdateQuantity={updateCartQuantity}
             onClose={close}
@@ -232,6 +251,7 @@ export default function App() {
         return (
           <WishlistModal
             initialTab={modal.activeTab}
+            products={products}
             user={user}
             orders={orders}
             wishlist={wishlist}
@@ -249,6 +269,7 @@ export default function App() {
         return (
           <ProductModal
             productId={modal.productId}
+            products={products}
             onClose={close}
             onAdd={(productId, variantId, quantity) => {
               const success = addToCart(
@@ -269,11 +290,17 @@ export default function App() {
         return (
           <SkinTestModal
             onClose={close}
-            onAdd={(productName) => {
+            onAdd={(recommendedProduct) => {
+              const productName = recommendedProduct?.productname;
+              if (typeof productName !== "string" || !productName.trim()) {
+                toast.error("This recommendation is missing its product name");
+                return false;
+              }
+
               const product = products.find(
                 (item) =>
-                  item.name.toLowerCase() ===
-                  productName.toLowerCase()
+                  item.name.trim().toLocaleLowerCase() ===
+                  productName.trim().toLocaleLowerCase()
               );
 
               if (!product) {
@@ -328,6 +355,7 @@ export default function App() {
           search={search}
           onSearch={setSearch}
           products={visibleProducts}
+          categories={categories}
           wishlist={wishlist}
           onAdd={(id) => open("product", id)}
           onToggleWish={toggleWishlist}

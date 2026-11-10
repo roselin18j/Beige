@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
-import { products, money } from "../../data/products.js";
+import { money } from "../../data/products.js";
 import { ShoppingBag, X, Minus, Plus } from "lucide-react";
 
-export default function ProductModal({ productId, onAdd, onClose }) {
-  const product = products.find((p) => p.id === Number(productId));
+export default function ProductModal({ productId, products = [], onAdd, onClose }) {
+  const product = products.find((p) => String(p.id) === String(productId));
 
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(null);
 
   useEffect(() => {
     if (product) {
-      setSelectedVariant(product.variants[0]);
+      setSelectedVariant(product.variants?.[0] || null);
       setQuantity(1);
     }
-  }, [productId]);
+  }, [product, productId]);
 
   if (!product || !selectedVariant) return null;
 

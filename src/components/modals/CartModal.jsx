@@ -9,14 +9,11 @@ import {
   X,
 } from "lucide-react";
 
-import {
-  products,
-  money,
-  FREE_SHIPPING_THRESHOLD,
-} from "../../data/products.js";
+import { money, FREE_SHIPPING_THRESHOLD } from "../../data/products.js";
 
 export default function CartModal({
   cart,
+  products = [],
   onRemove,
   onUpdateQuantity,
   onClose,
