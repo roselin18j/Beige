@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import {
   X,
@@ -53,32 +52,6 @@ const hairQuestions = [
   },
 ];
 
-const recommendedProducts = [
-  {
-    name: "Beige Gentle Face Cleanser",
-    description:
-      "Explore an everyday cleanser; confirm the formula suits your skin and avoid products that irritate it.",
-    price: 599,
-  },
-  {
-    name: "Beige Everyday Face Cream",
-    description:
-      "Explore moisturizing care that feels comfortable for your skin.",
-    price: 799,
-  },
-  {
-    name: "Beige Daily Care Shampoo",
-    description:
-      "Explore shampoo options for your daily hair care needs.",
-    price: 799,
-  },
-  {
-    name: "Beige Everyday Conditioner",
-    description:
-      "Explore conditioning care that fits your natural hair pattern and routine.",
-    price: 849,
-  },
-];
 
 export default function SkinTestModal({ onClose, onAdd }) {
   const [step, setStep] = useState(1);
@@ -88,26 +61,40 @@ export default function SkinTestModal({ onClose, onAdd }) {
   const [cameraError, setCameraError] = useState("");
   const [showProfile, setShowProfile] = useState(false);
   const [addedProducts, setAddedProducts] = useState([]);
-
+  const [AnalysisResult, setAnalysisResult] = useState(null);
+  const [loading, setloading] = useState(false)
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const getQuestionAnswerArray = () => {
+    const skinAnswers = skinQuestions.map((item, index) => ({
+      category: "Skin",
+      question: item.question,
+      answer: answers[`1-${index}`] || "",
+    }));
+
+    const hairAnswers = hairQuestions.map((item, index) => ({
+      category: "Hair",
+      question: item.question,
+      answer: answers[`2-${index}`] || "",
+    }));
+
+    return [...skinAnswers, ...hairAnswers];
+  };
 
   const handleAnswer = (questionIndex, answer) => {
     setAnswers((prev) => ({
       ...prev,
       [`${step}-${questionIndex}`]: answer,
     }));
-
   };
-
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setCameraOpen(false);
   };
-
 
   useEffect(() => {
     return () => {
@@ -118,7 +105,6 @@ export default function SkinTestModal({ onClose, onAdd }) {
       }
     };
   }, [photo]);
-
 
   const startCamera = async () => {
     try {
@@ -140,15 +126,13 @@ export default function SkinTestModal({ onClose, onAdd }) {
     }
   };
 
-
   useEffect(() => {
     if (cameraOpen && videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     }
   }, [cameraOpen]);
 
-  // Capture photo
   const capturePhoto = () => {
     const video = videoRef.current;
 
@@ -183,7 +167,6 @@ export default function SkinTestModal({ onClose, onAdd }) {
     );
   };
 
-  // Upload photo
   const handlePhotoUpload = (event) => {
     const file = event.target.files?.[0];
 
@@ -205,7 +188,6 @@ export default function SkinTestModal({ onClose, onAdd }) {
     event.target.value = "";
   };
 
-  // Remove photo
   const removePhoto = () => {
     if (photo?.url) {
       URL.revokeObjectURL(photo.url);
@@ -214,78 +196,202 @@ export default function SkinTestModal({ onClose, onAdd }) {
     setPhoto(null);
   };
 
-  // Back navigation
   const handleBack = () => {
-
-
     if (step > 1) {
       setStep((prev) => prev - 1);
     }
   };
 
-  // Continue / View profile
- // Continue / View profile
-const handleContinue = () => {
 
 
-  // STEP 1: Validate skin questions
-  if (step === 1) {
-    const unanswered = skinQuestions.some(
-      (_, index) => !answers[`1-${index}`]
-    );
+  // const handleContinue = async () => {
+  //   if (step === 1) {
+  //     const unanswered = skinQuestions.some(
+  //       (_, index) => !answers[`1-${index}`]
+  //     );
 
-    if (unanswered) {
-      toast.error("Please answer all skin questions before continuing.");
+  //     if (unanswered) {
+  //       toast.error("Please answer all skin questions before continuing.");
+  //       return;
+  //     }
+
+  //     setStep(2);
+  //     return;
+  //   }
+
+  //   if (step === 2) {
+  //     const unanswered = hairQuestions.some(
+  //       (_, index) => !answers[`2-${index}`]
+  //     );
+
+  //     if (unanswered) {
+  //       toast.error("Please answer all hair questions before continuing.");
+  //       return;
+  //     }
+
+  //     setStep(3);
+  //     return;
+  //   }
+
+  //   try {
+  //     const questionAnswerArray = getQuestionAnswerArray();
+
+  //     console.log("USER QUESTION ANSWERS:", questionAnswerArray);
+  //     console.log("USER PHOTO:", photo);
+
+  //     if (!photo || !photo.file) {
+  //       toast.error("Please upload your face image.");
+  //       return;
+  //     }
+
+  //     const formData = new FormData();
+
+  //     formData.append("image", photo.file);
+  //     formData.append("answers", JSON.stringify(questionAnswerArray));
+
+  //     const response = await fetch("http://localhost:3000/skinAnalyze", {
+  //       method: "POST",
+  //       body: formData,
+  //     });
+
+  //     const result = await response.json();
+
+  //     if (!response.ok || !result.success) {
+  //       throw new Error(result.message || "Skin analysis failed.");
+  //     }
+
+  //     console.log("SKIN ANALYSIS RESULT:", result);
+  //     console.log("result.data", result.data);
+
+  //     setAnalysisResult(result.data);
+
+  //     toast.success("Your skin analysis completed successfully.");
+
+  //     stopCamera();
+  //     setShowProfile(true);
+  //   } catch (error) {
+  //     console.error("Skin analysis error:", error);
+
+  //     toast.error(
+  //       error.message || "Unable to analyze your image. Please try again."
+  //     );
+  //   }
+  // };
+
+
+
+  const handleContinue = async () => {
+    if (step === 1) {
+      const unanswered = skinQuestions.some(
+        (_, index) => !answers[`1-${index}`]
+      );
+
+      if (unanswered) {
+        toast.error("Please answer all skin questions before continuing.");
+        return;
+      }
+
+      setStep(2);
       return;
     }
 
-    setStep(2);
-    return;
-  }
+    if (step === 2) {
+      const unanswered = hairQuestions.some(
+        (_, index) => !answers[`2-${index}`]
+      );
 
-  // STEP 2: Validate hair questions
-  if (step === 2) {
-    const unanswered = hairQuestions.some(
-      (_, index) => !answers[`2-${index}`]
-    );
+      if (unanswered) {
+        toast.error("Please answer all hair questions before continuing.");
+        return;
+      }
 
-    if (unanswered) {
-      toast.error("Please answer all hair questions before continuing.");
+      setStep(3);
       return;
     }
 
-    setStep(3);
-    return;
-  }
+    if (loading) return;
 
-  // STEP 3: Photo is optional
-  stopCamera();
-  setShowProfile(true);
-};
+    if (!photo?.file) {
+      toast.error("Please upload your face image.");
+      return;
+    }
 
-  // Edit answers
+    setloading(true);
+
+    try {
+      const questionAnswerArray = getQuestionAnswerArray();
+
+      const formData = new FormData();
+
+      formData.append("image", photo.file);
+      formData.append("answers", JSON.stringify(questionAnswerArray));
+
+      const response = await fetch("http://localhost:3000/skinAnalyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Skin analysis failed.");
+      }
+
+      setAnalysisResult(result.data);
+
+      toast.success("Your skin analysis completed successfully.");
+
+      stopCamera();
+      setShowProfile(true);
+
+    } catch (error) {
+      console.error("Skin analysis error:", error);
+
+      toast.error(
+        error.message || "Unable to analyze your image. Please try again."
+      );
+
+    } finally {
+      setloading(false);
+    }
+  };
+
   const handleEditAnswers = () => {
     setShowProfile(false);
     setStep(1);
-
   };
 
-  // Skin type calculation
   const getSkinType = () => {
-    if (answers["1-0"] === "Oily") return "Oily";
-
-    if (answers["1-0"] === "Tight or dry") return "Dry";
-
-    if (answers["1-0"] === "Dry in some areas, oily in others") {
-      return "Combination";
-    }
-
-    if (answers["1-2"] === "Often") return "Sensitive";
-
-    return "Balanced / normal";
+    return AnalysisResult?.skinAnalysis?.skinType || "Not assessed";
   };
 
-  // Add recommendation to cart
+  const hairType =
+    AnalysisResult?.hairAnalysis?.hairType ||
+    answers["2-0"] ||
+    "Not assessed";
+  const scalpType =
+    AnalysisResult?.hairAnalysis?.scalpCondition ||
+    answers["2-1"] ||
+    "Not assessed";
+  const hairCondition =
+    AnalysisResult?.hairAnalysis?.hairCondition || "Not assessed";
+  const skinTone =
+    AnalysisResult?.skinAnalysis?.skinToneObservation || "Not assessed";
+  const skinSummary = AnalysisResult?.skinAnalysis?.summary || "";
+  const hairSummary = AnalysisResult?.hairAnalysis?.summary || "";
+  const visibleConcerns =
+    AnalysisResult?.skinAnalysis?.visibleConcerns || [];
+  const generalAdvice =
+    AnalysisResult?.recommendations?.generalAdvice || [];
+  const morningRoutine =
+    AnalysisResult?.recommendations?.morningRoutine || [];
+  const nightRoutine =
+    AnalysisResult?.recommendations?.nightRoutine || [];
+  const hairCareRoutine =
+    AnalysisResult?.recommendations?.hairCareRoutine || [];
+  const dynamicProducts = AnalysisResult?.recommendedProducts || [];
+  const disclaimer = AnalysisResult?.disclaimer || "";
+
   const handleAddToBag = (productName) => {
     if (addedProducts.includes(productName)) return;
 
@@ -301,15 +407,9 @@ const handleContinue = () => {
     }
   };
 
-  // Hair information
-  const hairType = answers["2-0"] || "Not assessed";
-  const scalpType = answers["2-1"] || "Not assessed";
-  const treatedHair = answers["2-3"] === "Yes";
-
   return (
     <div className="flex max-h-[90vh] flex-col overflow-hidden bg-[#FCFAF6] text-[#3F352D]">
-
-      {/* HEADER */}
+      {/* HEADER (unchanged) */}
       <header className="sticky top-0 z-20 shrink-0 bg-[#FCFAF6] px-6 pt-5 max-[768px]:px-3 max-[768px]:pt-4">
         <div className="flex items-center justify-between">
           <h2 className="font-serif text-2xl tracking-tight max-[550px]:text-[20px] max-[450px]:text-[18px]">
@@ -327,13 +427,12 @@ const handleContinue = () => {
         </div>
 
         <div
-          data-drag-handle 
+          data-drag-handle
           className="flex cursor-grab  max-[550px]:hidden touch-none justify-end pr-2 text-[#A58B70] active:cursor-grabbing"
         >
           <GripHorizontal size={23} strokeWidth={1.3} />
         </div>
 
-        {/* PROGRESS */}
         {!showProfile && (
           <div className="flex items-center justify-between border-t border-[#E2D4C3] py-5">
             {["Skin test", "Hair test", "Your photo"].map((label, index) => {
@@ -344,18 +443,16 @@ const handleContinue = () => {
               return (
                 <div
                   key={label}
-                  className={`flex items-center gap-2 text-xs max-[768px]:text-[10px] max-[768px]:gap-1 ${
-                    active || completed
-                      ? "font-medium text-[#72543D]"
-                      : "text-[#A58B70]"
-                  }`}
+                  className={`flex items-center gap-2 text-xs max-[768px]:text-[10px] max-[768px]:gap-1 ${active || completed
+                    ? "font-medium text-[#72543D]"
+                    : "text-[#A58B70]"
+                    }`}
                 >
                   <span
-                    className={`flex h-6 w-6 max-[768px]:h-5 max-[768px]:w-5 items-center justify-center rounded-full border ${
-                      active || completed
-                        ? "border-[#72543D] bg-[#72543D] text-white"
-                        : "border-[#D6C2A8]"
-                    }`}
+                    className={`flex h-6 w-6 max-[768px]:h-5 max-[768px]:w-5 items-center justify-center rounded-full border ${active || completed
+                      ? "border-[#72543D] bg-[#72543D] text-white"
+                      : "border-[#D6C2A8]"
+                      }`}
                   >
                     {completed ? <Check size={13} /> : number}
                   </span>
@@ -368,11 +465,10 @@ const handleContinue = () => {
         )}
       </header>
 
-      {/* CARE PROFILE */}
+      {/* CARE PROFILE — CHANGED: now renders dynamic data from AnalysisResult */}
       {showProfile ? (
         <>
           <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 max-[768px]:px-3 max-[768px]:pb-6">
-
             <p className="mb-3 mt-7 max-[991px]:mt-4 max-[768px]:mt-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#72543D]">
               Your care profile
             </p>
@@ -383,10 +479,9 @@ const handleContinue = () => {
 
             {/* PROFILE CARDS */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-
               <div className="border border-[#E2D4C3] bg-[#F5EEE2] p-4 max-[881px]:p-3">
                 <p className="text-xs text-[#806D5B]">
-                  Skin type · from answers
+                  Skin type · AI analysis
                 </p>
 
                 <h3 className="mt-3 text-[20px] max-[768px]:text-[18px] max-[550px]:text-[16px]  font-semibold leading-6">
@@ -396,7 +491,7 @@ const handleContinue = () => {
 
               <div className="border border-[#E2D4C3] bg-[#F5EEE2] p-4 max-[881px]:p-3">
                 <p className="text-xs text-[#806D5B]">
-                  Hair type · from answers
+                  Hair type · AI analysis
                 </p>
 
                 <h3 className="mt-3 text-[20px] max-[768px]:text-[18px] max-[550px]:text-[16px] font-semibold leading-6">
@@ -410,44 +505,119 @@ const handleContinue = () => {
 
               <div className="border border-[#E2D4C3] bg-[#F5EEE2] p-4 max-[881px]:p-3">
                 <p className="text-xs text-[#806D5B]">
-                  Face shape · photo estimate
+                  Skin tone · AI analysis
                 </p>
 
                 <h3 className="mt-3 text-[20px] max-[768px]:text-[18px] max-[550px]:text-[16px]  font-semibold leading-6">
-                  Not assessed
+                  {skinTone}
                 </h3>
-
-                <p className="mt-3 text-xs text-[#806D5B]">
-                  Photo analysis not run
-                </p>
               </div>
             </div>
 
-            <p className="text-sm leading-6 text-[#806D5B] mt-2">
-              This care profile is based on your answers. Photos alone cannot
-              confirm oil balance, sensitivity or scalp condition.
-            </p>
+            {/* SUMMARIES */}
+            {skinSummary && (
+              <p className="text-sm leading-6 text-[#806D5B] mt-3">
+                {skinSummary}
+              </p>
+            )}
+            {hairSummary && (
+              <p className="text-sm leading-6 text-[#806D5B] mt-2">
+                {hairSummary}
+              </p>
+            )}
 
-            <div className="mt-5 border border-[#E2D4C3] bg-[#F0E6D6] px-4 py-4 text-sm leading-6 text-[#806D5B]">
-              Face-shape estimation and AI try-on will become available
-              when the store&apos;s AI service is activated.
-            </div>
+            {/* VISIBLE CONCERNS */}
+            {visibleConcerns.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium mb-2">Visible concerns</h3>
+                <ul className="list-disc pl-5 text-xs leading-5 text-[#806D5B]">
+                  {visibleConcerns.map((concern, i) => (
+                    <li key={i}>
+                      {typeof concern === "string"
+                        ? concern
+                        : concern?.concern ||
+                        concern?.name ||
+                        JSON.stringify(concern)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-            {/* RECOMMENDATIONS */}
+            {/* ROUTINES */}
+            {(morningRoutine.length > 0 ||
+              nightRoutine.length > 0 ||
+              hairCareRoutine.length > 0) && (
+                <div className="mt-5 border border-[#E2D4C3] bg-[#F0E6D6] px-4 py-4 text-sm leading-6 text-[#806D5B]">
+                  {morningRoutine.length > 0 && (
+                    <div className="mb-2">
+                      <p className="font-medium text-[#3F352D]">
+                        Morning routine
+                      </p>
+                      <ul className="list-disc pl-5">
+                        {morningRoutine.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {nightRoutine.length > 0 && (
+                    <div className="mb-2">
+                      <p className="font-medium text-[#3F352D]">Night routine</p>
+                      <ul className="list-disc pl-5">
+                        {nightRoutine.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {hairCareRoutine.length > 0 && (
+                    <div>
+                      <p className="font-medium text-[#3F352D]">
+                        Hair care routine
+                      </p>
+                      <ul className="list-disc pl-5">
+                        {hairCareRoutine.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+            {/* GENERAL ADVICE */}
+            {generalAdvice.length > 0 && (
+              <div className="mt-3 border-l border-[#A58B70] pl-3 text-xs leading-5 text-[#806D5B]">
+                <ul className="list-disc pl-4">
+                  {generalAdvice.map((advice, i) => (
+                    <li key={i}>{advice}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* RECOMMENDED PRODUCTS (DYNAMIC) */}
             <h3 className="my-5 max-[768px]:my-2 text-base font-medium">
               Explore care for your routine
             </h3>
 
-            {recommendedProducts.map((product) => {
-              const isAdded = addedProducts.includes(product.name);
+            {dynamicProducts.length === 0 && (
+              <p className="text-sm text-[#806D5B]">
+                No product recommendations available yet.
+              </p>
+            )}
+
+            {dynamicProducts.map((product) => {
+              const isAdded = addedProducts.includes(product.productname);
 
               return (
                 <div
-                  key={product.name}
+                  key={product._id || product.productname}
                   className="border-b border-[#E2D4C3] py-5 max-[768px]:py-4 max-[550px]:py-3"
                 >
                   <h4 className="text-sm font-semibold">
-                    {product.name}
+                    {product.productname}
                   </h4>
 
                   <div className="mt-3 flex items-start justify-between gap-4">
@@ -457,35 +627,45 @@ const handleContinue = () => {
 
                     <button
                       type="button"
-                      onClick={() => handleAddToBag(product.name)}
+                      onClick={() => handleAddToBag(product.productname)}
                       disabled={isAdded}
-                      className={`shrink-0 border px-4 py-3 text-xs transition ${
-                        isAdded
-                          ? "border-black bg-black text-white"
-                          : "border-[#A58B70] bg-transparent text-[#3F352D] hover:bg-[#F2EAE0]"
-                      }`}
+                      className={`shrink-0 border px-4 py-3 text-xs transition ${isAdded
+                        ? "border-black bg-black text-white"
+                        : "border-[#A58B70] bg-transparent text-[#3F352D] hover:bg-[#F2EAE0]"
+                        }`}
                     >
                       {isAdded ? "ADDED TO CART ✓" : "ADD TO BAG"}
                     </button>
                   </div>
 
                   <p className="mt-3 text-sm">
-                    ₹{product.price}
+                    ₹{product.final_price || product.price}
                   </p>
+
+                  {product.reason && (
+                    <p className="mt-1 text-xs leading-5 text-[#806D5B] italic">
+                      {product.reason}
+                    </p>
+                  )}
+
+                  {product.usage && (
+                    <p className="mt-1 text-xs leading-5 text-[#806D5B]">
+                      Usage: {product.usage}
+                    </p>
+                  )}
                 </div>
               );
             })}
 
-            <p className="mt-3 text-xs leading-5 text-[#806D5B]">
-              Products are illustrative samples. Suitability depends on the final
-              ingredients and your individual response; these are suggestions,
-              not a confirmed formulation match.
-            </p>
+            {disclaimer && (
+              <p className="mt-3 text-xs leading-5 text-[#806D5B]">
+                {disclaimer}
+              </p>
+            )}
 
-            {treatedHair && (
+            {hairCondition && hairCondition !== "Not assessed" && (
               <div className="mt-2 border-l border-[#A58B70] pl-3 text-xs leading-5 text-[#806D5B]">
-                You reported treated hair. Check that the final shampoo and
-                conditioner are suitable for treated hair.
+                Hair condition: {hairCondition}
               </div>
             )}
 
@@ -496,7 +676,7 @@ const handleContinue = () => {
             </div>
           </main>
 
-          {/* PROFILE FOOTER */}
+          {/* PROFILE FOOTER (unchanged) */}
           <footer className="flex shrink-0 items-center justify-between gap-4 bg-[#FCFAF6] px-6 py-5 sm:px-8">
             <button
               type="button"
@@ -505,24 +685,12 @@ const handleContinue = () => {
             >
               Edit answers
             </button>
-
-            <button
-              type="button"
-              onClick={() => toast.info("AI try-on is not activated yet.")}
-              className="bg-[#72543D] px-6 py-4 text-xs text-white transition hover:bg-[#5D4330]"
-            >
-              Try lip colour & foundation
-            </button>
           </footer>
         </>
       ) : (
         <>
-          {/* QUESTIONNAIRE */}
+          {/* QUESTIONNAIRE (unchanged) */}
           <main className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 max-[768px]:px-3 max-[768px]:pb-6">
-
-
-
-            {/* STEP 1 - SKIN TEST */}
             {step === 1 && (
               <>
                 <p className="mb-6 max-[768px]:mb-4 text-sm leading-6 text-[#806D5B]">
@@ -532,7 +700,6 @@ const handleContinue = () => {
                 <div className="space-y-8">
                   {skinQuestions.map((item, index) => (
                     <section key={item.question}>
-
                       <h3 className="mb-5 text-[15px] font-medium leading-6">
                         {item.question}
                         <span className="ml-1 text-red-600">*</span>
@@ -542,11 +709,10 @@ const handleContinue = () => {
                         {item.options.map((option) => (
                           <label
                             key={option}
-                            className={`flex min-h-12 cursor-pointer items-center gap-3 border px-4 py-3 text-sm mb-3 transition ${
-                              answers[`1-${index}`] === option
-                                ? "border-[#72543D] bg-[#F5EEE5]"
-                                : "border-[#E2D4C3] hover:bg-[#F8F3EC]"
-                            }`}
+                            className={`flex min-h-12 cursor-pointer items-center gap-3 border px-4 py-3 text-sm mb-3 transition ${answers[`1-${index}`] === option
+                              ? "border-[#72543D] bg-[#F5EEE5]"
+                              : "border-[#E2D4C3] hover:bg-[#F8F3EC]"
+                              }`}
                           >
                             <input
                               type="radio"
@@ -565,7 +731,6 @@ const handleContinue = () => {
               </>
             )}
 
-            {/* STEP 2 - HAIR TEST */}
             {step === 2 && (
               <>
                 <p className="mb-8 text-sm leading-6 text-[#806D5B]">
@@ -584,11 +749,10 @@ const handleContinue = () => {
                         {item.options.map((option) => (
                           <label
                             key={option}
-                            className={`flex min-h-12 cursor-pointer items-center gap-3 border px-4 py-3 text-sm  mb-3 transition ${
-                              answers[`2-${index}`] === option
-                                ? "border-[#72543D] bg-[#F5EEE5]"
-                                : "border-[#E2D4C3] hover:bg-[#F8F3EC]"
-                            }`}
+                            className={`flex min-h-12 cursor-pointer items-center gap-3 border px-4 py-3 text-sm  mb-3 transition ${answers[`2-${index}`] === option
+                              ? "border-[#72543D] bg-[#F5EEE5]"
+                              : "border-[#E2D4C3] hover:bg-[#F8F3EC]"
+                              }`}
                           >
                             <input
                               type="radio"
@@ -607,7 +771,6 @@ const handleContinue = () => {
               </>
             )}
 
-            {/* STEP 3 - PHOTO */}
             {step === 3 && (
               <>
                 <p className="mb-6 text-sm leading-7 max-[550px]:leading-5 text-[#806D5B]">
@@ -616,7 +779,6 @@ const handleContinue = () => {
                 </p>
 
                 <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden border border-[#E2D4C3] bg-[#EAE0D0] sm:min-h-[320px]">
-
                   {cameraOpen ? (
                     <video
                       ref={videoRef}
@@ -646,7 +808,6 @@ const handleContinue = () => {
                   )}
                 </div>
 
-                {/* PHOTO CONTROLS */}
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
                   {cameraOpen ? (
                     <>
@@ -727,9 +888,8 @@ const handleContinue = () => {
             )}
           </main>
 
-          {/* QUESTIONNAIRE FOOTER */}
+          {/* QUESTIONNAIRE FOOTER (unchanged) */}
           <footer className="sticky bottom-0 z-10 flex shrink-0 items-center justify-between bg-[#FCFAF6] px-6 py-5 max-[768px]:px-3 max-[768px]:pb-6">
-
             {step > 1 ? (
               <button
                 type="button"
@@ -743,7 +903,7 @@ const handleContinue = () => {
               <span />
             )}
 
-            <button
+            {/* <button
               type="button"
               onClick={handleContinue}
               className="bg-[#72543D] px-7 py-4 max-[768px]:px-3 max-[768px]:py-3 text-xs text-white transition hover:bg-[#5D4330]"
@@ -751,9 +911,36 @@ const handleContinue = () => {
               {step === 1
                 ? "Continue to hair test"
                 : step === 2
-                ? "Continue to photo"
-                : "View my care profile"}
+                  ? "Continue to photo"
+                  : "View my care profile"}
+            </button> */}
+
+
+
+            <button
+              type="button"
+              onClick={handleContinue}
+              disabled={loading}
+              className={`bg-[#72543D] px-7 py-4 max-[768px]:px-3 max-[768px]:py-3 text-xs text-white transition hover:bg-[#5D4330] flex items-center justify-center gap-2 ${loading ? "cursor-not-allowed opacity-70" : ""
+                }`}
+            >
+              {loading ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Analyzing your skin...
+                </>
+              ) : step === 1 ? (
+                "Continue to hair test"
+              ) : step === 2 ? (
+                "Continue to photo"
+              ) : (
+                "View my care profile"
+              )}
             </button>
+
+
+
+
           </footer>
         </>
       )}
