@@ -34,5 +34,13 @@ export const UserAuthApi = {
     return ApiRequest.post(
       `${env.user_end_point}/auth/logout`
     )
+  },
+
+
+    aiMakeup : () => {
+    return ApiRequest.post(
+      `${env.user_end_point}/auth/logout`
+    )
   }
+
 };

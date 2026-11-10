@@ -19,14 +19,7 @@ const foundationShades = [
   { id: "espresso", name: "Espresso", color: "#6B4430" },
 ];
 
-/**
- * Props
- * - onClose()                      close the modal
- * - onGenerate({ file, image, lip, foundation })
- *       async; return a preview image URL (string) or { imageUrl }
- * - aiAvailable (bool)             false => "awaiting activation" notices and
- *                                  the Generate button stays disabled
- */
+
 export default function TryOnModal({
   onClose,
   onGenerate,
@@ -47,9 +40,10 @@ export default function TryOnModal({
   const [sendConsent, setSendConsent] = useState(false);
 
   const [lip, setLip] = useState("classic-red");
-  const [foundation, setFoundation] = useState("none");
+  const [foundation, setFoundation] = useState("honey");
 
   const [result, setResult] = useState(null);
+
   const [loading, setLoading] = useState(false);
 
   // ---------- cleanup ----------
@@ -67,7 +61,6 @@ export default function TryOnModal({
     if (imageRef.current) URL.revokeObjectURL(imageRef.current);
     setFile(blob);
     setImage(URL.createObjectURL(blob));
-    setResult(null);
   };
 
   const removePhoto = () => {
@@ -176,24 +169,43 @@ export default function TryOnModal({
     setStep(1);
   };
 
-  // ---------- generate ----------
+  // CHANGED: use correct endpoint, preserve selectedOptions alongside data
   const handleGenerate = async () => {
-    if (!image || !sendConsent || !aiAvailable) return;
+    if (!file) {
+      toast.error("Please add a photo first.");
+      return;
+    }
+
+    setLoading(true);
+    setResult(null);
 
     try {
-      setLoading(true);
-      const output = await onGenerate?.({
-        file,
-        image,
-        lip,
-        foundation,
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("lipColor", lip);
+      formData.append("foundationShade", foundation);
+
+      const response = await fetch("http://localhost:3000/makeupBaseAnalyze", {
+        method: "POST",
+        body: formData,
       });
-      const url = typeof output === "string" ? output : output?.imageUrl;
-      if (!url) throw new Error("No preview returned");
-      setResult(url);
+
+      const payload = await response.json();
+      console.log("Makeup AI Result:", payload);
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.message || "Makeup analysis failed.");
+      }
+
+      // CHANGED: merge selectedOptions (from top level) into result
+      setResult({
+        ...payload.data,
+        selectedOptions: payload.selectedOptions,
+      });
+      toast.success("Makeup analysis completed.");
     } catch (error) {
-      console.error(error);
-      toast.error("We couldn't create your preview. Please try again.");
+      console.error("Makeup Analysis Error:", error);
+      toast.error(error.message || "Unable to analyze your makeup.");
     } finally {
       setLoading(false);
     }
@@ -209,9 +221,24 @@ export default function TryOnModal({
     setResult(null);
   };
 
+
+  useEffect(() => {
+    console.log("Lip State Updated:", lip);
+  }, [lip]);
+
+  useEffect(() => {
+    console.log("Foundation State Updated:", foundation);
+  }, [foundation]);
+
   const canContinue = Boolean(image && photoConsent);
   const canGenerate = Boolean(
-    image && sendConsent && aiAvailable && !loading
+    image &&
+    sendConsent &&
+    !loading &&
+    lip &&
+    lip !== "none" &&
+    foundation &&
+    foundation !== "none"
   );
 
   // ---------- small UI pieces ----------
@@ -230,11 +257,10 @@ export default function TryOnModal({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-xs text-ink transition ${
-        selected
-          ? "border-mocha bg-sand"
-          : "border-line bg-white hover:border-mocha"
-      }`}
+      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-xs text-ink transition ${selected
+        ? "border-mocha bg-sand"
+        : "border-line bg-white hover:border-mocha"
+        }`}
     >
       <Swatch color={item.color} />
       {item.name}
@@ -274,7 +300,6 @@ export default function TryOnModal({
             hair visible. For try-on, avoid filters and heavy makeup.
           </p>
 
-          {/* photo area */}
           {cameraOpen ? (
             <div className="relative overflow-hidden rounded-md bg-black">
               <video
@@ -350,11 +375,10 @@ export default function TryOnModal({
                 }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={onDrop}
-                className={`flex h-[min(260px,30vh)] cursor-pointer flex-col items-center justify-center rounded-md border border-dashed transition ${
-                  dragging
-                    ? "border-mocha bg-sand"
-                    : "border-line bg-cream hover:border-mocha"
-                }`}
+                className={`flex h-[min(260px,30vh)] cursor-pointer flex-col items-center justify-center rounded-md border border-dashed transition ${dragging
+                  ? "border-mocha bg-sand"
+                  : "border-line bg-cream hover:border-mocha"
+                  }`}
               >
                 <ImagePlus size={28} className="mb-3 text-mocha" />
                 <p className="text-sm text-ink">Drag a photo here</p>
@@ -392,7 +416,6 @@ export default function TryOnModal({
             onChange={onFileChange}
           />
 
-          {/* consent */}
           <label className="mt-5 flex cursor-pointer items-start gap-3">
             <input
               type="checkbox"
@@ -425,11 +448,10 @@ export default function TryOnModal({
               type="button"
               onClick={goToShades}
               disabled={!canContinue}
-              className={`rounded-md px-6 py-3 text-sm font-medium transition ${
-                canContinue
-                  ? "bg-mocha text-white hover:opacity-90"
-                  : "cursor-not-allowed bg-mocha/40 text-white"
-              }`}
+              className={`rounded-md px-6 py-3 text-sm font-medium transition ${canContinue
+                ? "bg-mocha text-white hover:opacity-90"
+                : "cursor-not-allowed bg-mocha/40 text-white"
+                }`}
             >
               Choose makeup shades
             </button>
@@ -486,24 +508,59 @@ export default function TryOnModal({
               </div>
             </div>
 
+            {/* CHANGED: expanded summary panel */}
             <div className="flex flex-col">
-              <span className="px-3 py-2 text-xs text-ink">AI preview</span>
-              <div className="m-2 mt-0 flex h-[min(210px,24vh)] items-center justify-center overflow-hidden rounded-sm bg-sand">
+              <span className="px-3 py-2 text-xs text-ink">AI analysis</span>
+              <div className="m-2 mt-0 h-[min(210px,24vh)] overflow-y-auto rounded-sm bg-white px-3 py-2 text-[11px] leading-4 text-ink">
                 {loading ? (
-                  <p className="px-4 text-center text-xs text-muted">
-                    Creating your preview...
+                  <p className="text-center text-xs text-muted">
+                    Analyzing your makeup...
                   </p>
                 ) : result ? (
-                  <img
-                    src={result}
-                    alt="AI makeup preview"
-                    className="h-full w-full object-cover object-top"
-                  />
+                  <div className="space-y-1.5">
+                    <p>
+                      <span className="font-semibold">Skin tone:</span>{" "}
+                      {result?.skinAnalysis?.visibleSkinTone || "—"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Undertone:</span>{" "}
+                      {result?.skinAnalysis?.possibleUndertone || "—"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Confidence:</span>{" "}
+                      {result?.skinAnalysis?.confidence || "—"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Selected shade:</span>{" "}
+                      {result?.foundationAnalysis?.selectedShade || "—"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Foundation fit:</span>{" "}
+                      {result?.foundationAnalysis?.suitability || "—"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Better direction:</span>{" "}
+                      {result?.foundationAnalysis?.recommendedShadeDirection ||
+                        "—"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Coverage:</span>{" "}
+                      {result?.foundationAnalysis?.coverage || "—"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Finish:</span>{" "}
+                      {result?.foundationAnalysis?.finish || "—"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Lip match:</span>{" "}
+                      {result?.lipColorAnalysis?.compatibility || "—"}
+                    </p>
+                  </div>
                 ) : (
-                  <div className="flex flex-col items-center px-4 text-center">
+                  <div className="flex h-full flex-col items-center justify-center text-center">
                     <Sparkles size={22} className="mb-2 text-mocha/60" />
                     <p className="text-xs text-muted">
-                      Your preview will appear here.
+                      Your analysis will appear here.
                     </p>
                   </div>
                 )}
@@ -511,20 +568,366 @@ export default function TryOnModal({
             </div>
           </div>
 
+          {/* CHANGED: render every field from the response */}
+          {result && !loading && (
+            <div className="mt-4 space-y-4 rounded-md border border-line bg-white px-4 py-4 text-xs leading-5 text-ink">
+
+              {/* ===== SELECTED OPTIONS ===== */}
+              {result?.selectedOptions && (
+                <section>
+                  <h4 className="mb-1 text-sm font-semibold text-ink">
+                    Selected options
+                  </h4>
+                  <p>
+                    <span className="font-semibold">Lip:</span>{" "}
+                    {result.selectedOptions.lipColor || "—"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Foundation:</span>{" "}
+                    {result.selectedOptions.foundationShade || "—"}
+                  </p>
+                </section>
+              )}
+
+              {/* ===== SKIN ANALYSIS ===== */}
+              <section>
+                <h4 className="mb-2 text-sm font-semibold text-ink">
+                  Skin analysis
+                </h4>
+                <div className="space-y-1">
+                  <p>
+                    <span className="font-semibold">Visible skin tone:</span>{" "}
+                    {result?.skinAnalysis?.visibleSkinTone || "—"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Possible undertone:</span>{" "}
+                    {result?.skinAnalysis?.possibleUndertone || "—"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Confidence:</span>{" "}
+                    {result?.skinAnalysis?.confidence || "—"}
+                  </p>
+                  {result?.skinAnalysis?.observation && (
+                    <p>
+                      <span className="font-semibold">Observation:</span>{" "}
+                      {result.skinAnalysis.observation}
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              {/* ===== FOUNDATION ANALYSIS ===== */}
+              <section>
+                <h4 className="mb-2 text-sm font-semibold text-ink">
+                  Foundation analysis
+                </h4>
+                <div className="space-y-1">
+                  <p>
+                    <span className="font-semibold">Selected shade:</span>{" "}
+                    {result?.foundationAnalysis?.selectedShade || "—"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Suitability:</span>{" "}
+                    {result?.foundationAnalysis?.suitability || "—"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">
+                      Recommended direction:
+                    </span>{" "}
+                    {result?.foundationAnalysis?.recommendedShadeDirection ||
+                      "—"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Coverage:</span>{" "}
+                    {result?.foundationAnalysis?.coverage || "—"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Finish:</span>{" "}
+                    {result?.foundationAnalysis?.finish || "—"}
+                  </p>
+                  {result?.foundationAnalysis?.reason && (
+                    <p>
+                      <span className="font-semibold">Reason:</span>{" "}
+                      {result.foundationAnalysis.reason}
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              {/* ===== MAKEUP RECOMMENDATIONS ===== */}
+              {result?.makeupRecommendations && (
+                <section>
+                  <h4 className="mb-2 text-sm font-semibold text-ink">
+                    Makeup recommendations
+                  </h4>
+
+                  <div className="space-y-3">
+                    {result.makeupRecommendations.primer && (
+                      <div className="rounded-sm bg-cream px-3 py-2">
+                        <p className="font-semibold">Primer</p>
+                        {result.makeupRecommendations.primer.type && (
+                          <p>
+                            <span className="font-semibold">Type:</span>{" "}
+                            {result.makeupRecommendations.primer.type}
+                          </p>
+                        )}
+                        {result.makeupRecommendations.primer.reason && (
+                          <p>
+                            <span className="font-semibold">Why:</span>{" "}
+                            {result.makeupRecommendations.primer.reason}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {result.makeupRecommendations.concealer && (
+                      <div className="rounded-sm bg-cream px-3 py-2">
+                        <p className="font-semibold">Concealer</p>
+                        {result.makeupRecommendations.concealer
+                          .shadeDirection && (
+                          <p>
+                            <span className="font-semibold">Shade:</span>{" "}
+                            {
+                              result.makeupRecommendations.concealer
+                                .shadeDirection
+                            }
+                          </p>
+                        )}
+                        {result.makeupRecommendations.concealer.type && (
+                          <p>
+                            <span className="font-semibold">Type:</span>{" "}
+                            {result.makeupRecommendations.concealer.type}
+                          </p>
+                        )}
+                        {result.makeupRecommendations.concealer
+                          .application && (
+                          <p>
+                            <span className="font-semibold">Application:</span>{" "}
+                            {
+                              result.makeupRecommendations.concealer
+                                .application
+                            }
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {result.makeupRecommendations.colorCorrector && (
+                      <div className="rounded-sm bg-cream px-3 py-2">
+                        <p className="font-semibold">Colour corrector</p>
+                        {result.makeupRecommendations.colorCorrector
+                          .recommended && (
+                          <p>
+                            <span className="font-semibold">Recommended:</span>{" "}
+                            {
+                              result.makeupRecommendations.colorCorrector
+                                .recommended
+                            }
+                          </p>
+                        )}
+                        {result.makeupRecommendations.colorCorrector.reason && (
+                          <p>
+                            <span className="font-semibold">Why:</span>{" "}
+                            {result.makeupRecommendations.colorCorrector.reason}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {result.makeupRecommendations.foundation && (
+                      <div className="rounded-sm bg-cream px-3 py-2">
+                        <p className="font-semibold">Foundation</p>
+                        {result.makeupRecommendations.foundation
+                          .recommendation && (
+                          <p>
+                            <span className="font-semibold">
+                              Recommendation:
+                            </span>{" "}
+                            {
+                              result.makeupRecommendations.foundation
+                                .recommendation
+                            }
+                          </p>
+                        )}
+                        {result.makeupRecommendations.foundation
+                          .application && (
+                          <p>
+                            <span className="font-semibold">Application:</span>{" "}
+                            {
+                              result.makeupRecommendations.foundation
+                                .application
+                            }
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {result.makeupRecommendations.settingPowder && (
+                      <div className="rounded-sm bg-cream px-3 py-2">
+                        <p className="font-semibold">Setting powder</p>
+                        {result.makeupRecommendations.settingPowder.shade && (
+                          <p>
+                            <span className="font-semibold">Shade:</span>{" "}
+                            {result.makeupRecommendations.settingPowder.shade}
+                          </p>
+                        )}
+                        {result.makeupRecommendations.settingPowder.type && (
+                          <p>
+                            <span className="font-semibold">Type:</span>{" "}
+                            {result.makeupRecommendations.settingPowder.type}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {result.makeupRecommendations.blush && (
+                      <div className="rounded-sm bg-cream px-3 py-2">
+                        <p className="font-semibold">Blush</p>
+                        {Array.isArray(
+                          result.makeupRecommendations.blush.recommendedColors
+                        ) &&
+                          result.makeupRecommendations.blush.recommendedColors
+                            .length > 0 && (
+                            <p>
+                              <span className="font-semibold">Colours:</span>{" "}
+                              {result.makeupRecommendations.blush.recommendedColors.join(
+                                ", "
+                              )}
+                            </p>
+                          )}
+                        {result.makeupRecommendations.blush.reason && (
+                          <p>
+                            <span className="font-semibold">Why:</span>{" "}
+                            {result.makeupRecommendations.blush.reason}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {result.makeupRecommendations.bronzer && (
+                      <div className="rounded-sm bg-cream px-3 py-2">
+                        <p className="font-semibold">Bronzer</p>
+                        {result.makeupRecommendations.bronzer
+                          .shadeDirection && (
+                          <p>
+                            <span className="font-semibold">Shade:</span>{" "}
+                            {
+                              result.makeupRecommendations.bronzer
+                                .shadeDirection
+                            }
+                          </p>
+                        )}
+                        {result.makeupRecommendations.bronzer.application && (
+                          <p>
+                            <span className="font-semibold">Application:</span>{" "}
+                            {result.makeupRecommendations.bronzer.application}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {result.makeupRecommendations.highlighter && (
+                      <div className="rounded-sm bg-cream px-3 py-2">
+                        <p className="font-semibold">Highlighter</p>
+                        {result.makeupRecommendations.highlighter
+                          .recommendedColors && (
+                          <p>
+                            <span className="font-semibold">Colours:</span>{" "}
+                            {
+                              result.makeupRecommendations.highlighter
+                                .recommendedColors
+                            }
+                          </p>
+                        )}
+                        {result.makeupRecommendations.highlighter
+                          .application && (
+                          <p>
+                            <span className="font-semibold">Application:</span>{" "}
+                            {
+                              result.makeupRecommendations.highlighter
+                                .application
+                            }
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* ===== LIP COLOUR ANALYSIS ===== */}
+              {result?.lipColorAnalysis && (
+                <section>
+                  <h4 className="mb-2 text-sm font-semibold text-ink">
+                    Lip colour analysis
+                  </h4>
+                  <div className="space-y-1">
+                    <p>
+                      <span className="font-semibold">Selected colour:</span>{" "}
+                      {result.lipColorAnalysis.selectedColor || "—"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Compatibility:</span>{" "}
+                      {result.lipColorAnalysis.compatibility || "—"}
+                    </p>
+                    {result.lipColorAnalysis.baseMakeupAdjustment && (
+                      <p>
+                        <span className="font-semibold">
+                          Base adjustment:
+                        </span>{" "}
+                        {result.lipColorAnalysis.baseMakeupAdjustment}
+                      </p>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* ===== COMPLETE ROUTINE ===== */}
+              {Array.isArray(result?.completeRoutine) &&
+                result.completeRoutine.length > 0 && (
+                  <section>
+                    <h4 className="mb-2 text-sm font-semibold text-ink">
+                      Complete routine
+                    </h4>
+                    <ol className="list-decimal space-y-1 pl-5">
+                      {result.completeRoutine.map((s, i) => (
+                        <li key={i}>
+                          <span className="font-semibold">
+                            {s.productType || `Step ${s.step ?? i + 1}`}:
+                          </span>{" "}
+                          {s.instruction || "—"}
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                )}
+
+              {/* ===== FINAL SUGGESTION ===== */}
+              {result?.finalSuggestion && (
+                <section>
+                  <h4 className="mb-1 text-sm font-semibold text-ink">
+                    Final suggestion
+                  </h4>
+                  <p>{result.finalSuggestion}</p>
+                </section>
+              )}
+
+              {/* ===== IMAGE LIMITATIONS ===== */}
+              {result?.imageLimitations && (
+                <section>
+                  <h4 className="mb-1 text-sm font-semibold text-ink">
+                    Image limitations
+                  </h4>
+                  <p className="text-muted">{result.imageLimitations}</p>
+                </section>
+              )}
+            </div>
+          )}
+
           <p className="mt-4 text-xs leading-5 text-muted">
             AI may alter image details. Colours vary with lighting and screens;
             this is not an exact shade match.
           </p>
-
-          {!result && (
-            <div className="mt-3">
-              <Notice>
-                {aiAvailable
-                  ? "No image has been generated yet."
-                  : "AI try-on is awaiting activation. No image has been generated."}
-              </Notice>
-            </div>
-          )}
 
           <label className="mt-4 flex cursor-pointer items-start gap-3">
             <input
@@ -552,14 +955,13 @@ export default function TryOnModal({
               type="button"
               onClick={handleGenerate}
               disabled={!canGenerate}
-              className={`flex items-center gap-2 rounded-md px-6 py-3 text-sm font-medium transition ${
-                canGenerate
-                  ? "bg-mocha text-white hover:opacity-90"
-                  : "cursor-not-allowed bg-mocha/40 text-white"
-              }`}
+              className={`flex items-center gap-2 rounded-md px-6 py-3 text-sm font-medium transition ${canGenerate
+                ? "bg-mocha text-white hover:opacity-90"
+                : "cursor-not-allowed bg-mocha/40 text-white"
+                }`}
             >
               <Sparkles size={15} />
-              {loading ? "Generating..." : "Generate AI preview"}
+              {loading ? "Analyzing..." : "Generate AI preview"}
             </button>
           </div>
 
