@@ -1,5 +1,6 @@
 
 const CDN = "https://cdn.dummyjson.com/product-images/beauty";
+import { env } from "../utils/env";
 
 
 
@@ -174,7 +175,7 @@ const normalizeImageUrl = (value) => {
   const url = getImageUrl(value);
   if (!url || /^(https?:|data:|blob:)/i.test(url)) return url;
   if (url.startsWith("//")) return `https:${url}`;
-  return `http://localhost:3000/${url.replace(/^\/+/, "")}`;
+  return `${env.api_base_url}/${url.replace(/^\/+/, "")}`;
 };
 
 export const normalizeProduct = (item) => {
@@ -206,7 +207,7 @@ export const normalizeProduct = (item) => {
 
 export const getallProduct = async () => {
   try {
-    const response = await fetch("http://localhost:3000/products", { method: "GET" });
+    const response = await fetch(`${env.api_base_url}/products`, { method: "GET" });
     if (!response.ok) throw new Error("Failed to fetch products");
 
     const result = await response.json();
