@@ -1,13 +1,33 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import ApiRequest from "../../utils/makeRequest";
-import { UserAuthApi } from "../../api/userAuth";
+import { aiAnalyze } from "../../api/Aianalyze";
 
 
-export const Aimakeup = createAsyncThunk(
-    "ai/Aimakeup",
+
+
+
+export const skinAnalyze = createAsyncThunk(
+    "ai/skinAnalyze",
     async (payload, { rejectWithValue }) => {
         try {
-            const res = await UserAuthApi.login(payload);
+            const res = await aiAnalyze.skinAnalyze(payload);
+            return res;
+        } catch (err) {
+            return rejectWithValue(
+                err?.response?.data || err?.message
+                    ? err.response?.data || { message: err.message }
+                    : { message: "Skin analysis failed." }
+            );
+        }
+    }
+);
+
+
+export const makeupBaseAnalyze = createAsyncThunk(
+    "ai/makeupBaseAnalyze",
+    async (payload, { rejectWithValue }) => {
+        try {
+            const res = await aiAnalyze.makeupBaseAnalyze(payload);
             return res;
         } catch (err) {
             return rejectWithValue(err?.response?.data || { message: err.message });
@@ -40,22 +60,39 @@ const authSlice = createSlice({
     extraReducers: (builder) => {
         builder
 
-            .addCase(Aimakeup.pending, (state) => {
+            .addCase(skinAnalyze.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(Aimakeup.fulfilled, (state, action) => {
+            .addCase(skinAnalyze.fulfilled, (state, action) => {
                 state.loading = false;
                 if (action.payload?.type == 0) {
                     state.isLogin = true;
                 }
             })
-            .addCase(Aimakeup.rejected, (state, action) => {
+            .addCase(skinAnalyze.rejected, (state, action) => {
                 state.loading = false;
                 state.isLogin = false;
             })
 
-         
+
+
+            .addCase(makeupBaseAnalyze.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(makeupBaseAnalyze.fulfilled, (state, action) => {
+                state.loading = false;
+                if (action.payload?.type == 0) {
+                    state.isLogin = true;
+                }
+            })
+            .addCase(makeupBaseAnalyze.rejected, (state, action) => {
+                state.loading = false;
+                state.isLogin = false;
+            })
+
+
     },
 });
 

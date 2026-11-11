@@ -27,7 +27,6 @@ export const decryptionRequestPayload = (keyId, encPayload) => {
 
 export const AESDecryptResponse = (response) => {
     try {
-        console.log({ response })
         const { keyId, hash, payload } = response;
 
 
@@ -44,6 +43,8 @@ export const AESDecryptResponse = (response) => {
         if (calculatedHash !== hash) {
             return toast.error("Hash mismatch. Data integrity check failed.")
         }
+
+        console.log('decrypted----------', decrypted)
         return decrypted
     } catch (error) {
         toast.error("Invalid Response!")

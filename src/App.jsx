@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getallProduct } from "./data/products.js";
 import { Toaster, toast } from "sonner";
-
 import Header from "./components/Header.jsx";
 import Hero from "./components/Hero.jsx";
 import ServiceStrip from "./components/ServiceStrip.jsx";
@@ -38,15 +37,25 @@ export default function App() {
   const [wishlist, setWishlist] = useState([]);
   const [modal, setModal] = useState(null);
 
+
+
+
+
   useEffect(() => {
-    let active = true;
-    getallProduct().then((loadedProducts) => {
-      if (active) setProducts(loadedProducts);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  let active = true;
+
+  getallProduct().then((loadedProducts) => {
+    console.log("Loaded Products:", loadedProducts);
+
+    if (active) {
+      setProducts(loadedProducts);
+    }
+  });
+
+  return () => {
+    active = false;
+  };
+}, []);
 
 
   const accountModalIds = [
@@ -230,7 +239,6 @@ export default function App() {
     [products]
   );
 
-  console.log('products------------', products)
 
 
   const renderModal = () => {

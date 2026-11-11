@@ -1,115 +1,108 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 import AuthLayout from "../components/auth/AuthLayout";
-import { registerUser, selectAuthLoading } from "../redux/slices/authSlices";
+import { registerUser } from "../redux/slices/authSlices";
 
 const NAME_REGEX = /^[A-Za-z]+(?:\s[A-Za-z]+)*$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SPECIAL_CHAR_REGEX = /[!@#$%^&*(),.?":{}|<>]/;
+
+const EMAIL_REGEX =
+  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$/;
+
+const SPECIAL_CHAR_REGEX = /[!@#$%^&*(),.?":{}|<>_\-+=/\\[\]~`;' ]/;
+
+const registerValidationSchema = Yup.object({
+  name: Yup.string()
+    .trim()
+    .required("Please enter your full name")
+    .matches(NAME_REGEX, "Name must contain letters and spaces only")
+    .min(2, "Name must contain at least 2 characters")
+    .max(50, "Name must not exceed 50 characters"),
+
+  email: Yup.string()
+    .trim()
+    .lowercase()
+    .required("Please enter your email address")
+    .matches(EMAIL_REGEX, "Please enter a valid email address")
+    .max(254, "Email must not exceed 254 characters"),
+
+  password: Yup.string()
+    .required("Please enter your password")
+    .min(8, "Password must contain at least 8 characters")
+    .max(64, "Password must not exceed 64 characters")
+    .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .matches(/[a-z]/, "Password must contain at least one lowercase letter")
+    .matches(/[0-9]/, "Password must contain at least one number")
+    .matches(
+      SPECIAL_CHAR_REGEX,
+      "Password must contain at least one special character"
+    )
+    .matches(/^\S*$/, "Password must not contain spaces"),
+
+  confirmPassword: Yup.string()
+    .required("Please confirm your password")
+    .oneOf([Yup.ref("password")], "Passwords do not match"),
+});
 
 export default function Register() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const loading = useSelector(selectAuthLoading);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const formik = useFormik({
+    initialValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
 
-    if (loading) return;
+    validationSchema: registerValidationSchema,
 
-    const formData = new FormData(e.currentTarget);
+    onSubmit: async (values) => {
+      if (loading) return;
 
-    const name = formData.get("name")?.trim();
-    const email = formData.get("email")?.trim().toLowerCase();
-    const password = formData.get("password");
-    const confirmPassword = formData.get("confirmPassword");
+      setLoading(true);
 
-    if (!name) {
-      toast.error("Please enter your full name");
-      return;
-    }
+      try {
+        const res = await dispatch(
+          registerUser({
+            name: values.name.trim(),
+            email: values.email.trim().toLowerCase(),
+            password: values.password,
+          })
+        ).unwrap();
 
-    if (!NAME_REGEX.test(name)) {
-      toast.error("Name must contain letters and spaces only");
-      return;
-    }
+        toast.success(
+          res?.message || "Registration successful! Please sign in."
+        );
 
-    if (!email) {
-      toast.error("Please enter your email address");
-      return;
-    }
-
-    if (!EMAIL_REGEX.test(email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    if (!password) {
-      toast.error("Please enter your password");
-      return;
-    }
-
-    if (password.length < 8) {
-      toast.error("Password must contain at least 8 characters");
-      return;
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      toast.error("Password must contain at least one uppercase letter");
-      return;
-    }
-
-    if (!/[a-z]/.test(password)) {
-      toast.error("Password must contain at least one lowercase letter");
-      return;
-    }
-
-    if (!/[0-9]/.test(password)) {
-      toast.error("Password must contain at least one number");
-      return;
-    }
-
-    if (!SPECIAL_CHAR_REGEX.test(password)) {
-      toast.error("Password must contain a special character");
-      return;
-    }
-
-    if (!confirmPassword) {
-      toast.error("Please confirm your password");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
-    try {
-      const res = await dispatch(
-        registerUser({ name, email, password })
-      ).unwrap();
-
-      toast.success(res?.message || "Registration successful! Please sign in.");
-
-      navigate("/login", { replace: true });
-    } catch (error) {
-      toast.error(error?.message || "Registration failed. Please try again.");
-    }
-  };
+        navigate("/login", { replace: true });
+      } catch (error) {
+        toast.error(
+          error?.message || "Registration failed. Please try again."
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+  });
 
   return (
     <AuthLayout
       title="Create your account"
       subtitle="Start your everyday beauty ritual with Beige."
     >
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <form onSubmit={formik.handleSubmit} noValidate className="space-y-5">
         <div>
           <label htmlFor="name" className="mb-2 block text-sm text-ink">
             Full name
@@ -121,8 +114,17 @@ export default function Register() {
             name="name"
             placeholder="Your name"
             autoComplete="name"
+            value={formik.values.name}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             className="w-full border border-line bg-white px-4 py-3.5 max-md:py-2.5 outline-none transition focus:border-mocha"
           />
+
+          {formik.touched.name && formik.errors.name && (
+            <p className="mt-1 text-sm text-red-500">
+              {formik.errors.name}
+            </p>
+          )}
         </div>
 
         <div>
@@ -136,8 +138,17 @@ export default function Register() {
             name="email"
             placeholder="you@example.com"
             autoComplete="email"
+            value={formik.values.email}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             className="w-full border border-line bg-white px-4 py-3.5 max-md:py-2.5 outline-none transition focus:border-mocha"
           />
+
+          {formik.touched.email && formik.errors.email && (
+            <p className="mt-1 text-sm text-red-500">
+              {formik.errors.email}
+            </p>
+          )}
         </div>
 
         <div>
@@ -152,6 +163,9 @@ export default function Register() {
               name="password"
               placeholder="Create a password"
               autoComplete="new-password"
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
               className="w-full border border-line bg-white px-4 py-3.5 max-md:py-2.5 pr-12 outline-none transition focus:border-mocha"
             />
 
@@ -168,10 +182,19 @@ export default function Register() {
           <p className="mt-2 text-xs text-muted">
             8+ characters, uppercase, lowercase, number & special character
           </p>
+
+          {formik.touched.password && formik.errors.password && (
+            <p className="mt-1 text-sm text-red-500">
+              {formik.errors.password}
+            </p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="confirmPassword" className="mb-2 block text-sm text-ink">
+          <label
+            htmlFor="confirmPassword"
+            className="mb-2 block text-sm text-ink"
+          >
             Confirm password
           </label>
 
@@ -182,6 +205,9 @@ export default function Register() {
               name="confirmPassword"
               placeholder="Confirm your password"
               autoComplete="new-password"
+              value={formik.values.confirmPassword}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
               className="w-full border border-line bg-white px-4 py-3.5 max-md:py-2.5 pr-12 outline-none transition focus:border-mocha"
             />
 
@@ -194,14 +220,23 @@ export default function Register() {
               {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+
+          {formik.touched.confirmPassword &&
+            formik.errors.confirmPassword && (
+              <p className="mt-1 text-sm text-red-500">
+                {formik.errors.confirmPassword}
+              </p>
+            )}
         </div>
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || formik.isSubmitting}
           className="w-full bg-mocha py-4 text-white transition hover:bg-ink disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Creating account..." : "Create account"}
+          {loading || formik.isSubmitting
+            ? "Creating account..."
+            : "Create account"}
         </button>
       </form>
 

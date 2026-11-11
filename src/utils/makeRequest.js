@@ -15,21 +15,27 @@ API.interceptors.response.use(
 );
 
 const ApiRequest = {
+
+
     get: async (url, params = {}) => {
         try {
             const res = await API.get(url, { params });
-            const decryptRes = AESDecryptResponse(res.data);
-            return decryptRes;
+
+            console.log("Raw Product API Response:", res.data);
+
+            return res.data;
+
         } catch (err) {
             throw err.response?.data || err;
         }
     },
+
     post: async (url, data = {}) => {
         try {
-            const encrypted = AESEncryptPayload(data);
-            const res = await API.post(url, encrypted);
-            const decryptRes = AESDecryptResponse(res.data)
-            return decryptRes;
+           // const encrypted = AESEncryptPayload(data);
+            const res = await API.post(url, { data });
+           // const decryptRes = AESDecryptResponse(res.data)
+            return res.data;
         } catch (err) {
             throw err.response?.data || err;
         }
@@ -59,7 +65,16 @@ const ApiRequest = {
         const res = await API.post(url, formData)
         const decryptRes = AESDecryptResponse(res.data)
         return decryptRes;
-    }
+    },
+
+    postFormData: async (url, data) => {
+        try {
+            const res = await API.post(url, data);
+            return res.data;
+        } catch (err) {
+            throw err.response?.data || err;
+        }
+    },
 };
 
 export default ApiRequest;
