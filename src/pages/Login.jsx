@@ -1,71 +1,88 @@
+
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { LoginUser } from "../redux/slices/authSlices";
 import AuthLayout from "../components/auth/AuthLayout";
-import { exchangeLogin, selectAuthLoading } from "../redux/slices/authSlices";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const loginValidationSchema = Yup.object({
+  email: Yup.string()
+    .trim()
+    .lowercase()
+    .email("Please enter a valid email address")
+    .matches(
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$/,
+      "Please enter a valid email address"
+    )
+    .max(254, "Email must not exceed 254 characters")
+    .required("Email address is required"),
+
+  password: Yup.string()
+    .required("Password is required")
+    .min(8, "Password must contain at least 8 characters")
+    .max(64, "Password must not exceed 64 characters")
+    .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .matches(/[a-z]/, "Password must contain at least one lowercase letter")
+    .matches(/[0-9]/, "Password must contain at least one number")
+    .matches(
+      /[!@#$%^&*(),.?":{}|<>_\-+=/\\[\]~`;' ]/,
+      "Password must contain at least one special character"
+    )
+    .matches(/^\S*$/, "Password must not contain spaces"),
+});
 
 export default function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const loading = useSelector(selectAuthLoading);
 
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const formik = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
+    },
 
-    if (loading) return;
+    validationSchema: loginValidationSchema,
 
-    const formData = new FormData(event.currentTarget);
+    onSubmit: async (values) => {
+      if (loading) return;
 
-    const email = formData.get("email")?.trim();
-    const password = formData.get("password");
+      setLoading(true);
 
-    if (!email) {
-      toast.error("Please enter your email");
-      return;
-    }
+      try {
+        await dispatch(
+          LoginUser({
+            email: values.email.trim().toLowerCase(),
+            password: values.password,
+          })
+        ).unwrap();
 
-    if (!EMAIL_REGEX.test(email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
+        toast.success("Welcome back to Beige");
 
-    if (!password) {
-      toast.error("Please enter your password");
-      return;
-    }
-
-    if (password.length < 8) {
-      toast.error("Password must contain at least 8 characters");
-      return;
-    }
-
-    try {
-      await dispatch(
-        exchangeLogin({ email: email.toLowerCase(), password })
-      ).unwrap();
-
-      toast.success("Welcome back to Beige");
-
-      navigate(location.state?.from?.pathname ?? "/", { replace: true });
-    } catch (error) {
-      toast.error(error?.message || "Login failed. Please try again.");
-    }
-  };
+        navigate(location.state?.from?.pathname ?? "/", {
+          replace: true,
+        });
+      } catch (error) {
+        toast.error(error?.message || "Login failed. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+  });
 
   return (
     <AuthLayout
       title="Welcome back"
       subtitle="Sign in to continue your everyday ritual."
     >
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <form onSubmit={formik.handleSubmit} noValidate className="space-y-5">
         <div>
           <label className="mb-2 block text-sm text-ink">
             Email address
@@ -76,8 +93,17 @@ export default function Login() {
             name="email"
             placeholder="you@example.com"
             autoComplete="email"
+            value={formik.values.email}
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
             className="w-full border border-line bg-white px-4 py-3.5 max-md:py-2.5 outline-none transition focus:border-mocha"
           />
+
+          {formik.touched.email && formik.errors.email && (
+            <p className="mt-1 text-sm text-red-500">
+              {formik.errors.email}
+            </p>
+          )}
         </div>
 
         <div>
@@ -91,6 +117,9 @@ export default function Login() {
               name="password"
               placeholder="Enter your password"
               autoComplete="current-password"
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
               className="w-full border border-line bg-white px-4 py-3.5 max-md:py-2.5 pr-12 outline-none transition focus:border-mocha"
             />
 
@@ -102,6 +131,12 @@ export default function Login() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+
+          {formik.touched.password && formik.errors.password && (
+            <p className="mt-1 text-sm text-red-500">
+              {formik.errors.password}
+            </p>
+          )}
         </div>
 
         <div className="text-right">

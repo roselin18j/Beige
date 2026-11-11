@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { isVideoFile, validateMediaFile } from "../../utils/mediaUpload.js";
+import { useDispatch, useSelector } from "react-redux";
+import { skinAnalyze } from "../../redux/slices/aiSlice.jsx";
+
 
 const skinQuestions = [
   {
@@ -69,6 +72,9 @@ export default function SkinTestModal({ onClose, onAdd }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
+  const dispatch = useDispatch();
+
+
 
   const getQuestionAnswerArray = () => {
     const skinAnswers = skinQuestions.map((item, index) => ({
@@ -254,15 +260,14 @@ export default function SkinTestModal({ onClose, onAdd }) {
       formData.append("image", photo.file);
       formData.append("answers", JSON.stringify(questionAnswerArray));
 
-      const response = await fetch(`${env.api_base_url}/skinAnalyze`, {
-        method: "POST",
-        body: formData,
-      });
+      const result = await dispatch(skinAnalyze(formData)).unwrap();
 
-      const result = await response.json();
+      console.log("Skin Analysis Result:", result);
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Skin analysis failed.");
+      if (!result?.success || !result?.data) {
+        throw new Error(
+          result?.message || "Skin analysis failed."
+        );
       }
 
       setAnalysisResult(result.data);
@@ -276,13 +281,15 @@ export default function SkinTestModal({ onClose, onAdd }) {
       console.error("Skin analysis error:", error);
 
       toast.error(
-        error.message || "Unable to analyze your media. Please try again."
+        error?.message || "Unable to analyze your media. Please try again."
       );
 
     } finally {
       setloading(false);
     }
   };
+
+
 
   const handleEditAnswers = () => {
     setShowProfile(false);

@@ -3,6 +3,8 @@ import { X, Camera, Upload, ImagePlus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { env } from "../../utils/env";
 import { isVideoFile, validateMediaFile } from "../../utils/mediaUpload.js";
+import { useDispatch, useSelector } from "react-redux";
+import { makeupBaseAnalyze } from "../../redux/slices/aiSlice.jsx";
 
 
 const lipColours = [
@@ -48,6 +50,7 @@ export default function TryOnModal({
   const [result, setResult] = useState(null);
 
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
 
   // ---------- cleanup ----------
   imageRef.current = image;
@@ -168,7 +171,8 @@ export default function TryOnModal({
     setStep(1);
   };
 
-  // CHANGED: use correct endpoint, preserve selectedOptions alongside data
+
+
   const handleGenerate = async () => {
     if (!file) {
       toast.error("Please add an image or video first.");
@@ -180,35 +184,43 @@ export default function TryOnModal({
 
     try {
       const formData = new FormData();
+
       formData.append("image", file);
       formData.append("lipColor", lip);
       formData.append("foundationShade", foundation);
 
-      const response = await fetch(`${env.api_base_url}/makeupBaseAnalyze`, {
-        method: "POST",
-        body: formData,
-      });
+      const payload = await dispatch(
+        makeupBaseAnalyze(formData)
+      ).unwrap();
 
-      const payload = await response.json();
       console.log("Makeup AI Result:", payload);
 
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.message || "Makeup analysis failed.");
+      if (!payload?.success || !payload?.data) {
+        throw new Error(
+          payload?.message || "Makeup analysis failed."
+        );
       }
 
-      // CHANGED: merge selectedOptions (from top level) into result
       setResult({
         ...payload.data,
         selectedOptions: payload.selectedOptions,
       });
+
       toast.success("Makeup analysis completed.");
+
     } catch (error) {
       console.error("Makeup Analysis Error:", error);
-      toast.error(error.message || "Unable to analyze your makeup.");
+
+      toast.error(
+        error?.message || "Unable to analyze your makeup."
+      );
+
     } finally {
       setLoading(false);
     }
   };
+
+
 
   const onPickLip = (id) => {
     setLip(id);
@@ -699,14 +711,14 @@ export default function TryOnModal({
                         <p className="font-semibold">Concealer</p>
                         {result.makeupRecommendations.concealer
                           .shadeDirection && (
-                          <p>
-                            <span className="font-semibold">Shade:</span>{" "}
-                            {
-                              result.makeupRecommendations.concealer
-                                .shadeDirection
-                            }
-                          </p>
-                        )}
+                            <p>
+                              <span className="font-semibold">Shade:</span>{" "}
+                              {
+                                result.makeupRecommendations.concealer
+                                  .shadeDirection
+                              }
+                            </p>
+                          )}
                         {result.makeupRecommendations.concealer.type && (
                           <p>
                             <span className="font-semibold">Type:</span>{" "}
@@ -715,14 +727,14 @@ export default function TryOnModal({
                         )}
                         {result.makeupRecommendations.concealer
                           .application && (
-                          <p>
-                            <span className="font-semibold">Application:</span>{" "}
-                            {
-                              result.makeupRecommendations.concealer
-                                .application
-                            }
-                          </p>
-                        )}
+                            <p>
+                              <span className="font-semibold">Application:</span>{" "}
+                              {
+                                result.makeupRecommendations.concealer
+                                  .application
+                              }
+                            </p>
+                          )}
                       </div>
                     )}
 
@@ -731,14 +743,14 @@ export default function TryOnModal({
                         <p className="font-semibold">Colour corrector</p>
                         {result.makeupRecommendations.colorCorrector
                           .recommended && (
-                          <p>
-                            <span className="font-semibold">Recommended:</span>{" "}
-                            {
-                              result.makeupRecommendations.colorCorrector
-                                .recommended
-                            }
-                          </p>
-                        )}
+                            <p>
+                              <span className="font-semibold">Recommended:</span>{" "}
+                              {
+                                result.makeupRecommendations.colorCorrector
+                                  .recommended
+                              }
+                            </p>
+                          )}
                         {result.makeupRecommendations.colorCorrector.reason && (
                           <p>
                             <span className="font-semibold">Why:</span>{" "}
@@ -753,26 +765,26 @@ export default function TryOnModal({
                         <p className="font-semibold">Foundation</p>
                         {result.makeupRecommendations.foundation
                           .recommendation && (
-                          <p>
-                            <span className="font-semibold">
-                              Recommendation:
-                            </span>{" "}
-                            {
-                              result.makeupRecommendations.foundation
-                                .recommendation
-                            }
-                          </p>
-                        )}
+                            <p>
+                              <span className="font-semibold">
+                                Recommendation:
+                              </span>{" "}
+                              {
+                                result.makeupRecommendations.foundation
+                                  .recommendation
+                              }
+                            </p>
+                          )}
                         {result.makeupRecommendations.foundation
                           .application && (
-                          <p>
-                            <span className="font-semibold">Application:</span>{" "}
-                            {
-                              result.makeupRecommendations.foundation
-                                .application
-                            }
-                          </p>
-                        )}
+                            <p>
+                              <span className="font-semibold">Application:</span>{" "}
+                              {
+                                result.makeupRecommendations.foundation
+                                  .application
+                              }
+                            </p>
+                          )}
                       </div>
                     )}
 
@@ -823,14 +835,14 @@ export default function TryOnModal({
                         <p className="font-semibold">Bronzer</p>
                         {result.makeupRecommendations.bronzer
                           .shadeDirection && (
-                          <p>
-                            <span className="font-semibold">Shade:</span>{" "}
-                            {
-                              result.makeupRecommendations.bronzer
-                                .shadeDirection
-                            }
-                          </p>
-                        )}
+                            <p>
+                              <span className="font-semibold">Shade:</span>{" "}
+                              {
+                                result.makeupRecommendations.bronzer
+                                  .shadeDirection
+                              }
+                            </p>
+                          )}
                         {result.makeupRecommendations.bronzer.application && (
                           <p>
                             <span className="font-semibold">Application:</span>{" "}
@@ -845,24 +857,24 @@ export default function TryOnModal({
                         <p className="font-semibold">Highlighter</p>
                         {result.makeupRecommendations.highlighter
                           .recommendedColors && (
-                          <p>
-                            <span className="font-semibold">Colours:</span>{" "}
-                            {
-                              result.makeupRecommendations.highlighter
-                                .recommendedColors
-                            }
-                          </p>
-                        )}
+                            <p>
+                              <span className="font-semibold">Colours:</span>{" "}
+                              {
+                                result.makeupRecommendations.highlighter
+                                  .recommendedColors
+                              }
+                            </p>
+                          )}
                         {result.makeupRecommendations.highlighter
                           .application && (
-                          <p>
-                            <span className="font-semibold">Application:</span>{" "}
-                            {
-                              result.makeupRecommendations.highlighter
-                                .application
-                            }
-                          </p>
-                        )}
+                            <p>
+                              <span className="font-semibold">Application:</span>{" "}
+                              {
+                                result.makeupRecommendations.highlighter
+                                  .application
+                              }
+                            </p>
+                          )}
                       </div>
                     )}
                   </div>
