@@ -41,6 +41,42 @@ export const UserAuthApi = {
     return ApiRequest.post(
       `${env.user_end_point}/auth/logout`
     )
-  }
+  },
+
+// new register
+
+  register: async (payload) => {
+    return ApiRequest.post(
+      `${env.user_end_point}/auth/register`,
+      payload
+    );
+  },
+  sendOtp: async (payload) => {
+    return ApiRequest.post(
+      `${env.user_end_point}/auth/otp/send`,
+      payload
+    );
+  },
+  verifyOtp: async (payload) => {
+    return ApiRequest.post(
+      `${env.user_end_point}/auth/otp/verify`,
+      payload
+    );
+  },
+  forgotPassword: async (payload) => {
+    return ApiRequest.post(
+      `${env.user_end_point}/auth/forgot-password`,
+      payload
+    );
+  },
+  resetPassword: async (payload) => {
+    return ApiRequest.post(
+      `${env.user_end_point}/auth/reset-password`,
+      payload
+    );
+  },
+
+  /** Google sign-in: window.location.assign(UserAuthApi.googleUrl) */
+googleUrl: `${env.api_base_url}/${env.user_end_point}/auth/google`,
 
 };

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { env } from "../../.env";
+import { env } from "./env";
 import { AESEncryptPayload } from "../helper/AESEncrypt";
 import { AESDecryptResponse } from "../helper/AESDecrypt";
 const API = axios.create({

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { UserRound, Heart, ShoppingBag, Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const headerNav = {
   SkinCare: "Skin care",
@@ -12,15 +13,15 @@ const headerNav = {
 
 function Logo({ className = "" }) {
   return (
-    <a
-      href="/"
-      className={`whitespace-nowrap font-serif font-light leading-none tracking-[1px] text-mocha ${className}`}
-    >
-      Beige
-      <span className="mt-[9px] ml-1 block text-center font-sans text-[10px] max-[991px]:text-[8px] tracking-[2px]">
-        YOUR DAILY RITUALS
-      </span>
-    </a>
+ <Link
+  to="/"
+  className={`whitespace-nowrap font-serif font-light leading-none tracking-[1px] text-mocha ${className}`}
+>
+  Beige
+  <span className="mt-[9px] ml-1 block text-center font-sans text-[10px] max-[991px]:text-[8px] tracking-[2px]">
+    YOUR DAILY RITUALS
+  </span>
+</Link>
   );
 }
 
