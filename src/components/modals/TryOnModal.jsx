@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { X, Camera, Upload, ImagePlus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { env } from "../../utils/env";
+import { isVideoFile, validateMediaFile } from "../../utils/mediaUpload.js";
 
 
 const lipColours = [
@@ -25,7 +26,7 @@ const foundationShades = [
 export default function TryOnModal({
   onClose,
   onGenerate,
-  aiAvailable = false,
+  aiAvailable = true,
 }) {
   const inputRef = useRef(null);
   const videoRef = useRef(null);
@@ -137,13 +138,9 @@ export default function TryOnModal({
   // ---------- upload ----------
   const processFile = (f) => {
     if (!f) return;
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
-    if (!allowed.includes(f.type)) {
-      toast.error("Upload a JPG, PNG or WEBP photo");
-      return;
-    }
-    if (f.size > 10 * 1024 * 1024) {
-      toast.error("Photo must be smaller than 10 MB");
+    const validationError = validateMediaFile(f);
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
     setPhoto(f);
@@ -174,7 +171,7 @@ export default function TryOnModal({
   // CHANGED: use correct endpoint, preserve selectedOptions alongside data
   const handleGenerate = async () => {
     if (!file) {
-      toast.error("Please add a photo first.");
+      toast.error("Please add an image or video first.");
       return;
     }
 
@@ -298,8 +295,8 @@ export default function TryOnModal({
       {step === 1 && (
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-7">
           <p className="mb-4 text-sm text-muted">
-            Use a clear front-facing photo in natural light, with your face and
-            hair visible. For try-on, avoid filters and heavy makeup.
+            Use a clear front-facing image or short video in natural light, with your face and
+            hair visible. The AI analyzes selected video frames.
           </p>
 
           {cameraOpen ? (
@@ -331,11 +328,20 @@ export default function TryOnModal({
           ) : image ? (
             <>
               <div className="overflow-hidden rounded-md border border-line bg-cream">
-                <img
-                  src={image}
-                  alt="Your uploaded portrait"
-                  className="h-[min(260px,30vh)] w-full object-cover object-top"
-                />
+                {isVideoFile(file) ? (
+                  <video
+                    src={image}
+                    controls
+                    playsInline
+                    className="h-[min(260px,30vh)] w-full object-contain"
+                  />
+                ) : (
+                  <img
+                    src={image}
+                    alt="Your uploaded portrait"
+                    className="h-[min(260px,30vh)] w-full object-cover object-top"
+                  />
+                )}
               </div>
 
               <div className="mt-4 flex justify-center gap-3">
@@ -353,7 +359,7 @@ export default function TryOnModal({
                   className="flex items-center gap-2 rounded-md border border-line bg-white px-4 py-2 text-xs text-ink transition hover:bg-cream"
                 >
                   <Upload size={14} />
-                  Upload photo
+                  Upload image or video
                 </button>
               </div>
 
@@ -383,9 +389,9 @@ export default function TryOnModal({
                   }`}
               >
                 <ImagePlus size={28} className="mb-3 text-mocha" />
-                <p className="text-sm text-ink">Drag a photo here</p>
+                <p className="text-sm text-ink">Drag an image or video here</p>
                 <p className="mt-1 text-xs text-muted">
-                  JPG, PNG or WEBP, up to 10 MB
+                  JPG, PNG, WEBP, MP4, MOV or WEBM · images up to 10 MB, videos up to 50 MB
                 </p>
               </div>
 
@@ -404,7 +410,7 @@ export default function TryOnModal({
                   className="flex items-center gap-2 rounded-md border border-line bg-white px-4 py-2 text-xs text-ink transition hover:bg-cream"
                 >
                   <Upload size={14} />
-                  Upload photo
+                  Upload image or video
                 </button>
               </div>
             </>
@@ -413,7 +419,7 @@ export default function TryOnModal({
           <input
             ref={inputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,video/x-m4v,video/x-msvideo,video/x-matroska,video/3gpp,.mov,.mp4,.webm,.m4v,.avi,.mkv,.3gp"
             hidden
             onChange={onFileChange}
           />
@@ -426,21 +432,20 @@ export default function TryOnModal({
               className="mt-0.5 h-4 w-4 accent-mocha"
             />
             <span className="text-xs leading-5 text-ink">
-              I own this photo or have permission to use it, and agree to send
-              it to OpenAI for AI analysis and cosmetic previews.
+              I own this image or video or have permission to use it, and agree to send
+              it to the AI provider for analysis and cosmetic recommendations.
             </span>
           </label>
 
           <p className="mt-3 text-xs leading-5 text-muted">
-            Beige does not save the photo to your account. It is sent to the AI
+            Beige does not save the upload to your account. It is sent to the AI
             provider only when you request an AI feature.
           </p>
 
           {!aiAvailable && (
             <div className="mt-4">
               <Notice>
-                AI photo features are awaiting activation. The skin and hair
-                questionnaire still gives you a care profile.
+                Upload an image or video and the AI will analyze its visible frames.
               </Notice>
             </div>
           )}
@@ -500,13 +505,20 @@ export default function TryOnModal({
             <div className="flex flex-col">
               <span className="px-3 py-2 text-xs text-ink">Original</span>
               <div className="m-2 mt-0 h-[min(210px,24vh)] overflow-hidden rounded-sm bg-white">
-                {image && (
+                {image && (isVideoFile(file) ? (
+                  <video
+                    src={image}
+                    controls
+                    playsInline
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
                   <img
                     src={image}
                     alt="Original"
                     className="h-full w-full object-cover object-top"
                   />
-                )}
+                ))}
               </div>
             </div>
 
@@ -939,8 +951,8 @@ export default function TryOnModal({
               className="mt-0.5 h-4 w-4 accent-mocha"
             />
             <span className="text-xs leading-5 text-ink">
-              I agree to send my permitted photo to OpenAI to generate the
-              try-on preview.
+              I agree to send my permitted image or video to the AI provider
+              for makeup analysis and recommendations.
             </span>
           </label>
 

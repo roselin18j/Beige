@@ -10,6 +10,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
+import { isVideoFile, validateMediaFile } from "../../utils/mediaUpload.js";
 
 const skinQuestions = [
   {
@@ -174,8 +175,9 @@ export default function SkinTestModal({ onClose, onAdd }) {
 
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setCameraError("Please select a valid image.");
+    const validationError = validateMediaFile(file);
+    if (validationError) {
+      setCameraError(validationError);
       return;
     }
 
@@ -238,7 +240,7 @@ export default function SkinTestModal({ onClose, onAdd }) {
     if (loading) return;
 
     if (!photo?.file) {
-      toast.error("Please upload your face image.");
+      toast.error("Please upload a face image or video.");
       return;
     }
 
@@ -274,7 +276,7 @@ export default function SkinTestModal({ onClose, onAdd }) {
       console.error("Skin analysis error:", error);
 
       toast.error(
-        error.message || "Unable to analyze your image. Please try again."
+        error.message || "Unable to analyze your media. Please try again."
       );
 
     } finally {
@@ -702,8 +704,8 @@ export default function SkinTestModal({ onClose, onAdd }) {
             {step === 3 && (
               <>
                 <p className="mb-6 text-sm leading-7 max-[550px]:leading-5 text-[#806D5B]">
-                  Use a clear front-facing photo in natural light, with your face
-                  and hair visible. For try-on, avoid filters and heavy makeup.
+                  Upload a clear face image or short video in natural light, with your face
+                  and hair visible. The AI analyzes selected video frames.
                 </p>
 
                 <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden border border-[#E2D4C3] bg-[#EAE0D0] sm:min-h-[320px]">
@@ -716,11 +718,20 @@ export default function SkinTestModal({ onClose, onAdd }) {
                       className="h-full max-h-[400px] w-full object-cover"
                     />
                   ) : photo ? (
-                    <img
-                      src={photo.url}
-                      alt="Your portrait"
-                      className="h-full max-h-[400px] w-full object-contain"
-                    />
+                    isVideoFile(photo.file) ? (
+                      <video
+                        src={photo.url}
+                        controls
+                        playsInline
+                        className="h-full max-h-[400px] w-full object-contain"
+                      />
+                    ) : (
+                      <img
+                        src={photo.url}
+                        alt="Your portrait"
+                        className="h-full max-h-[400px] w-full object-contain"
+                      />
+                    )
                   ) : (
                     <div className="flex flex-col items-center text-center text-[#A58B70]">
                       <Camera size={38} strokeWidth={1.8} />
@@ -730,7 +741,7 @@ export default function SkinTestModal({ onClose, onAdd }) {
                       </h3>
 
                       <p className="mt-1 text-sm">
-                        Take a photo or upload one from your device.
+                        Take a photo or upload an image or video.
                       </p>
                     </div>
                   )}
@@ -773,7 +784,7 @@ export default function SkinTestModal({ onClose, onAdd }) {
                         className="flex items-center gap-2 border border-[#A58B70] px-5 py-3 text-sm transition hover:bg-[#F2EAE0]"
                       >
                         <Upload size={17} />
-                        Upload photo
+                        Upload image or video
                       </button>
                     </>
                   )}
@@ -781,10 +792,13 @@ export default function SkinTestModal({ onClose, onAdd }) {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,video/x-m4v,video/x-msvideo,video/x-matroska,video/3gpp,.mov,.mp4,.webm,.m4v,.avi,.mkv,.3gp"
                     onChange={handlePhotoUpload}
                     className="hidden"
                   />
+                  <p className="mt-2 text-center text-xs text-[#806D5B]">
+                    Images up to 10 MB · Videos up to 50 MB (AI samples the first 12 seconds)
+                  </p>
                 </div>
 
                 {photo && !cameraOpen && (
@@ -804,14 +818,10 @@ export default function SkinTestModal({ onClose, onAdd }) {
                 )}
 
                 <p className="mt-6 text-xs leading-5 max-[550px]:leading-4 text-[#806D5B] ">
-                  Beige does not save the photo to your account. It is sent to the
+                  Beige does not save the upload to your account. It is sent to the
                   AI provider only when you request an AI feature.
                 </p>
 
-                <div className="mt-2 max-[550px]:leading-5 border border-[#E2D4C3] bg-[#F0E6D6] px-4 py-4 text-sm leading-6 max-[550px]:text-[14px] text-[#806D5B]">
-                  AI photo features are awaiting activation. The skin and hair
-                  questionnaire still gives you a care profile.
-                </div>
               </>
             )}
           </main>
