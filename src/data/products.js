@@ -215,10 +215,11 @@ export const getallProduct = async () => {
       ? result
       : result.products || result.data || [];
 
-    return Array.isArray(productList) ? productList.map(normalizeProduct) : [];
+    const list = Array.isArray(productList) ? productList.map(normalizeProduct) : [];
+    return list.length ? list : staticProducts;
   } catch (error) {
     console.error("Product API error:", error);
-    return [];
+    return staticProducts;
   }
 };
 
