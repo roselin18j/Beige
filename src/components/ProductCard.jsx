@@ -29,6 +29,15 @@ export default function ProductCard({
 
   const hasColors = p.variants.some((variant) => variant.color);
 
+
+  const handleHeart = (async(p) => {
+    try {
+     onToggleWish(p.id)
+    } catch (error) {
+      console.log('error', error)
+    }
+  })
+
   return (
     <article className="group min-w-0">
       {/* Image */}
@@ -56,7 +65,8 @@ export default function ProductCard({
         {/* Wishlist */}
         <button
           type="button"
-          onClick={() => onToggleWish(p.id)}
+         // onClick={() => onToggleWish(p.id)}
+         onClick={() => handleHeart(p)}
           aria-label={`Save ${p.name}`}
           aria-pressed={saved}
           className={`absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-white/90 transition-colors ${

@@ -3,10 +3,6 @@ import ApiRequest from "../../utils/makeRequest";
 import { UserAuthApi } from "../../api/userAuth";
 
 
-/* =====================================================
-   NEW - register / OTP login / forgot + reset password
-   (login itself still uses exchangeLogin above)
-===================================================== */
 
 
 export const LoginUser = createAsyncThunk(
@@ -150,17 +146,34 @@ const authSlice = createSlice({
                 state.loading = true;
                 state.error = null;
             })
+
+            // .addCase(verifyLoginOtp.fulfilled, (state, action) => {
+            //     state.loading = false;
+            //     state.userData = action.payload?.data?.user ?? action.payload?.user ?? state.userData;
+            //     state.isLogin = true;
+            // })
+
+
             .addCase(verifyLoginOtp.fulfilled, (state, action) => {
                 state.loading = false;
-                state.userData = action.payload?.data?.user ?? action.payload?.user ?? state.userData;
+
+                state.userData =
+                    action.payload?.data?.user ??
+                    action.payload?.user ??
+                    action.payload?.data?.data?.user ??
+                    state.userData;
+
                 state.isLogin = true;
+                state.authChecked = true;
             })
+
+
             .addCase(verifyLoginOtp.rejected, (state, action) => {
                 state.loading = false;
-                state.isLogin = false;
                 state.error = action.payload?.message || "Invalid or expired code";
             })
 
+            
             .addCase(forgotPassword.pending, (state) => {
                 state.loading = true;
                 state.error = null;

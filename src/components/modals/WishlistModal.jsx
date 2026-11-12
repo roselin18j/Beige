@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { money } from "../../data/products.js";
 import {
   Heart,
@@ -9,6 +9,12 @@ import {
   Trash2,
   Package,
 } from "lucide-react";
+import { Wishlist } from "../../redux/slices/commonSlice.jsx";
+import { useDispatch, useSelector } from "react-redux";
+import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
+
+
+
 
 export default function WishlistModal({
   initialTab = "wishlistModal",
@@ -29,10 +35,38 @@ export default function WishlistModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const dispatch = useDispatch();
+  const [items, setitems] = useState([])
 
-  const items = wishlist
-    .map((id) => products.find((p) => String(p.id) === String(id)))
-    .filter(Boolean);
+
+  const userData = useSelector(selectAuthUser);
+  const isLogin = useSelector(selectIsLogin);
+
+  console.log("User Data:", userData);
+  console.log("Is Login:", isLogin);
+
+
+
+  useEffect(() => {
+    if (!userData?.id || !isLogin) return;
+    GetWishList()
+  }, [userData?.id, isLogin, dispatch]);
+
+
+  const GetWishList = (async () => {
+    try {
+      console.log('id------------', userData.id)
+      const payload = { type: "get", userId: userData.id, email: userData.email }
+      const res = await dispatch(Wishlist(payload)).unwrap()
+      console.log('res----', res)
+      setitems(res.data)
+    } catch (error) {
+      console.log('error', error)
+    }
+  })
+
+
+
 
   const email = user?.email || "";
 
@@ -111,7 +145,7 @@ export default function WishlistModal({
 
         {/* Drag handle */}
         <div
-          data-drag-handle 
+          data-drag-handle
           className="max-[550px]:hidden mt-1 flex cursor-grab touch-none justify-center text-mocha/60 active:cursor-grabbing"
         >
           <GripHorizontal size={20} strokeWidth={1.3} />
@@ -140,8 +174,8 @@ export default function WishlistModal({
               type="button"
               onClick={() => handleTabChange(tab.id)}
               className={`relative flex-1 px-3 py-3 text-xs transition sm:px-4 sm:text-sm ${activeTab === tab.id
-                  ? "font-medium text-[#72543D]"
-                  : "text-[#51463C] hover:text-[#72543D]"
+                ? "font-medium text-[#72543D]"
+                : "text-[#51463C] hover:text-[#72543D]"
                 }`}
             >
               {tab.label}
@@ -216,7 +250,7 @@ export default function WishlistModal({
             </div>
 
             {/* Mobile */}
-            <div>
+            {/* <div>
               <label
                 htmlFor="account-mobile"
                 className="mb-2 block text-sm"
@@ -240,7 +274,7 @@ export default function WishlistModal({
                 placeholder="Enter your mobile number"
                 className="w-full border border-[#DCCDBB] bg-white px-3 py-3 max-[550px]:py-2 text-sm outline-none transition focus:border-[#72543D]"
               />
-            </div>
+            </div> */}
 
             {/* Feedback */}
             {error && (

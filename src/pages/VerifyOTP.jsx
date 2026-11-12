@@ -103,7 +103,6 @@ export default function VerifyOTP() {
       return;
     }
 
-
     setLoading(true);
 
     try {
@@ -118,14 +117,21 @@ export default function VerifyOTP() {
 
       }
 
-
-
       const response = await dispatch(verifyLoginOtp(payload)).unwrap();
       console.log('response', response)
 
       toast.success(response?.message || "OTP verified successfully");
 
       navigate("/")
+
+
+      if (type === "register") {
+        navigate("/");
+      } else if (type === "login") {
+        localStorage.setItem("token", response.token);
+        console.log('restoken----------------------', response.token)
+        navigate("/");
+      }
 
     } catch (error) {
       toast.error(

@@ -23,6 +23,27 @@ export const productList = createAsyncThunk(
 );
 
 
+export const Wishlist = createAsyncThunk(
+    "common/Wishlist",
+    async (payload, { rejectWithValue }) => {
+        try {
+            const res = await commonApi.Wishlist(payload);
+            return res;
+        } catch (err) {
+            return rejectWithValue(
+                err?.response?.data || {
+                    message: err?.message || "Failed to fetch products."
+                }
+            );
+        }
+    }
+);
+
+
+
+
+
+
 const initialState = {
     userData: null,
     wallets: null,
@@ -61,6 +82,23 @@ const authSlice = createSlice({
                 state.loading = false;
                 state.isLogin = false;
             })
+
+
+            .addCase(Wishlist.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(Wishlist.fulfilled, (state, action) => {
+                state.loading = false;
+                if (action.payload?.type == 0) {
+                    state.isLogin = true;
+                }
+            })
+            .addCase(Wishlist.rejected, (state, action) => {
+                state.loading = false;
+                state.isLogin = false;
+            })
+
 
 
 
