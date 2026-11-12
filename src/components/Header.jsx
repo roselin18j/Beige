@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { UserRound, Heart, ShoppingBag, Menu, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const headerNav = {
   SkinCare: "Skin care",
@@ -13,21 +13,21 @@ const headerNav = {
 
 function Logo({ className = "" }) {
   return (
- <Link
-  to="/"
-  className={`whitespace-nowrap font-serif font-light leading-none tracking-[1px] text-mocha ${className}`}
->
-  Beige
-  <span className="mt-[9px] ml-1 block text-center font-sans text-[10px] max-[991px]:text-[8px] tracking-[2px]">
-    YOUR DAILY RITUALS
-  </span>
-</Link>
+    <Link
+      to="/"
+      className={`whitespace-nowrap font-serif font-light leading-none tracking-[1px] text-mocha ${className}`}
+    >
+      Beige
+      <span className="mt-[9px] ml-1 block text-center font-sans text-[10px] max-[991px]:text-[8px] tracking-[2px]">
+        YOUR DAILY RITUALS
+      </span>
+    </Link>
   );
 }
 
 export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
   const [menuOpen, setMenuOpen] = useState(false);
-
+  const navigate = useNavigate();
   const closeMenu = () => setMenuOpen(false);
 
   const goToShop = () => {
@@ -104,8 +104,11 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
             className="flex items-center gap-2 text-sm text-ink"
           >
             <UserRound size={20} strokeWidth={1.5} />
-            <span className="hidden sm:inline max-md:hidden" >Login / Register</span>
           </button>
+
+
+          <span className="hidden sm:inline max-md:hidden" onClick={() => navigate("/login") } >Login / Register</span>
+
 
           <button
             type="button"
@@ -167,17 +170,15 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
           SIDE DRAWER (below lg)
       ============================= */}
       <div
-        className={`fixed inset-0 z-[60] lg:hidden ${
-          menuOpen ? "visible" : "invisible delay-300"
-        }`}
+        className={`fixed inset-0 z-[60] lg:hidden ${menuOpen ? "visible" : "invisible delay-300"
+          }`}
         aria-hidden={!menuOpen}
       >
         {/* Overlay */}
         <div
           onClick={closeMenu}
-          className={`absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
-            menuOpen ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${menuOpen ? "opacity-100" : "opacity-0"
+            }`}
         />
 
         {/* Panel */}
@@ -185,9 +186,8 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
           role="dialog"
           aria-modal="true"
           aria-label="Menu"
-          className={`absolute inset-y-0 right-0 flex w-[85%] max-w-[320px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            menuOpen ? "translate-x-0" : "translate-x-full"
-          }`}
+          className={`absolute inset-y-0 right-0 flex w-[85%] max-w-[320px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${menuOpen ? "translate-x-0" : "translate-x-full"
+            }`}
         >
           {/* Drawer header */}
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -211,11 +211,10 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
                 type="button"
                 onClick={goToShop}
                 style={{ transitionDelay: menuOpen ? `${80 + i * 40}ms` : "0ms" }}
-                className={`block w-full border-b border-line py-4 text-left text-[15px] text-ink transition-all duration-300 hover:text-rose ${
-                  menuOpen
+                className={`block w-full border-b border-line py-4 text-left text-[15px] text-ink transition-all duration-300 hover:text-rose ${menuOpen
                     ? "translate-x-0 opacity-100"
                     : "translate-x-3 opacity-0"
-                }`}
+                  }`}
               >
                 {label}
               </button>

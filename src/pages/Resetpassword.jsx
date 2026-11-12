@@ -1,79 +1,67 @@
+import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { toast } from "sonner";
+import { useFormik } from "formik";
+import * as Yup from "yup";
 
 import AuthLayout from "../components/auth/AuthLayout";
-import { resetPassword, selectAuthLoading } from "../redux/slices/authSlices";
+import { resetPassword } from "../redux/slices/authSlices";
 
 const SPECIAL_CHAR_REGEX = /[!@#$%^&*(),.?":{}|<>]/;
 
 export default function ResetPassword() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const loading = useSelector(selectAuthLoading);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const formik = useFormik({
+    initialValues: {
+      password: "",
+      confirmPassword: "",
+    },
 
-    if (loading) return;
+    validationSchema: Yup.object({
+      password: Yup.string()
+        .required("Please enter your new password")
+        .min(8, "Password must contain at least 8 characters")
+        .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+        .matches(/[a-z]/, "Password must contain at least one lowercase letter")
+        .matches(/[0-9]/, "Password must contain at least one number")
+        .matches(SPECIAL_CHAR_REGEX, "Password must contain a special character"),
 
-    const formData = new FormData(e.currentTarget);
+      confirmPassword: Yup.string()
+        .required("Please confirm your password")
+        .oneOf([Yup.ref("password")], "Passwords do not match"),
+    }),
 
-    const password = formData.get("password");
-    const confirmPassword = formData.get("confirmPassword");
+    onSubmit: async (values) => {
+      if (loading) return;
 
-    if (!password) {
-      toast.error("Please enter your new password");
-      return;
-    }
+      setLoading(true);
 
-    if (password.length < 8) {
-      toast.error("Password must contain at least 8 characters");
-      return;
-    }
+      try {
+        const res = await dispatch(
+          resetPassword({ token, password: values.password })
+        ).unwrap();
 
-    if (!/[A-Z]/.test(password)) {
-      toast.error("Password must contain at least one uppercase letter");
-      return;
-    }
+        toast.success(res?.message || "Password updated. Please sign in.");
 
-    if (!/[a-z]/.test(password)) {
-      toast.error("Password must contain at least one lowercase letter");
-      return;
-    }
-
-    if (!/[0-9]/.test(password)) {
-      toast.error("Password must contain at least one number");
-      return;
-    }
-
-    if (!SPECIAL_CHAR_REGEX.test(password)) {
-      toast.error("Password must contain a special character");
-      return;
-    }
-
-    if (!confirmPassword) {
-      toast.error("Please confirm your password");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
-    try {
-      const res = await dispatch(resetPassword({ token, password })).unwrap();
-
-      toast.success(res?.message || "Password updated. Please sign in.");
-
-      navigate("/login", { replace: true });
-    } catch (error) {
-      toast.error(error?.message || "Could not reset the password. Please try again.");
-    }
-  };
+        navigate("/login", { replace: true });
+      } catch (error) {
+        toast.error(
+          error?.message || "Could not reset the password. Please try again."
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+  });
 
   if (!token) {
     return (
@@ -96,20 +84,40 @@ export default function ResetPassword() {
       title="Set a new password"
       subtitle="Choose a strong password you haven't used before."
     >
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <form onSubmit={formik.handleSubmit} noValidate className="space-y-5">
         <div>
           <label htmlFor="password" className="mb-2 block text-sm text-ink">
             New password
           </label>
 
-          <input
-            id="password"
-            type="password"
-            name="password"
-            placeholder="Create a new password"
-            autoComplete="new-password"
-            className="w-full border border-line bg-white px-4 py-3.5 outline-none transition focus:border-mocha"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Create a new password"
+              autoComplete="new-password"
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className="w-full border border-line bg-white px-4 py-3.5 pr-12 outline-none transition focus:border-mocha"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`}></i>
+            </button>
+          </div>
+
+          {formik.touched.password && formik.errors.password && (
+            <p className="mt-1 text-sm text-red-500">
+              {formik.errors.password}
+            </p>
+          )}
 
           <p className="mt-2 text-xs text-muted">
             8+ characters, uppercase, lowercase, number & special character
@@ -117,18 +125,49 @@ export default function ResetPassword() {
         </div>
 
         <div>
-          <label htmlFor="confirmPassword" className="mb-2 block text-sm text-ink">
+          <label
+            htmlFor="confirmPassword"
+            className="mb-2 block text-sm text-ink"
+          >
             Confirm new password
           </label>
 
-          <input
-            id="confirmPassword"
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm your new password"
-            autoComplete="new-password"
-            className="w-full border border-line bg-white px-4 py-3.5 outline-none transition focus:border-mocha"
-          />
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="Confirm your new password"
+              autoComplete="new-password"
+              value={formik.values.confirmPassword}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              className="w-full border border-line bg-white px-4 py-3.5 pr-12 outline-none transition focus:border-mocha"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+              aria-label={
+                showConfirmPassword
+                  ? "Hide confirm password"
+                  : "Show confirm password"
+              }
+            >
+              <i
+                className={`bi ${
+                  showConfirmPassword ? "bi-eye-slash" : "bi-eye"
+                }`}
+              ></i>
+            </button>
+          </div>
+
+          {formik.touched.confirmPassword && formik.errors.confirmPassword && (
+            <p className="mt-1 text-sm text-red-500">
+              {formik.errors.confirmPassword}
+            </p>
+          )}
         </div>
 
         <button
@@ -142,7 +181,10 @@ export default function ResetPassword() {
 
       <p className="mt-8 text-center text-sm text-muted">
         Back to{" "}
-        <Link to="/login" className="font-medium text-mocha underline underline-offset-4">
+        <Link
+          to="/login"
+          className="font-medium text-mocha underline underline-offset-4"
+        >
           Sign in
         </Link>
       </p>

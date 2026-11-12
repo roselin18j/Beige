@@ -10,5 +10,12 @@ export const commonApi = {
     );
   },
 
+  Wishlist: async (payload) => {
+    return ApiRequest.post(
+      `${env.api_base_url}${env.user_end_point}/Wishlist`,
+      payload
+    );
+  },
+
 
 };
