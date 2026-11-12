@@ -80,13 +80,27 @@ export default function Register() {
             email: values.email.trim().toLowerCase(),
             password: values.password,
           })
-        ).unwrap();
+        ).unwrap()
+
+
 
         toast.success(
           res?.message || "Registration successful! Please sign in."
         );
 
-        navigate("/login", { replace: true });
+
+        navigate("/verify-otp", {
+          state: {
+            name: values.name.trim(),
+            email: values.email.trim().toLowerCase(),
+            password: values.password,
+            type: "register"
+          },
+          replace: true,
+        });
+
+
+
       } catch (error) {
         toast.error(
           error?.message || "Registration failed. Please try again."

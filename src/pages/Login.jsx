@@ -57,18 +57,32 @@ export default function Login() {
       setLoading(true);
 
       try {
-        await dispatch(
+        const res = await dispatch(
           LoginUser({
             email: values.email.trim().toLowerCase(),
             password: values.password,
           })
         ).unwrap();
 
-        toast.success("Welcome back to Beige");
 
-        navigate(location.state?.from?.pathname ?? "/", {
+ 
+        toast.success(
+          res?.message || "Registration successful! Please sign in."
+        );
+
+
+        navigate("/verify-otp", {
+          state: {
+            name:"",
+            email: values.email.trim().toLowerCase(),
+            password: values.password,
+            type: "login"
+          },
           replace: true,
         });
+
+
+
       } catch (error) {
         toast.error(error?.message || "Login failed. Please try again.");
       } finally {

@@ -39,7 +39,7 @@ export const sendLoginOtp = createAsyncThunk(
     "auth/otp/send",
     async (payload, { rejectWithValue }) => {
         try {
-            const res = await UserAuthApi.sendOtp(payload);
+            const res = await UserAuthApi.resendOTP(payload);
             return res;
         } catch (err) {
             return rejectWithValue(err?.response?.data || { message: err.message });
