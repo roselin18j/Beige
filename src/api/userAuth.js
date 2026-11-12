@@ -20,16 +20,16 @@ export const UserAuthApi = {
     );
   },
 
-  sendOtp: async (payload) => {
+  resendOTP: async (payload) => {
     return ApiRequest.post(
-      `${env.api_base_url}${env.user_end_point}/sendotp`,
+      `${env.api_base_url}${env.user_end_point}/resendOTP`,
       payload
     );
   },
 
   verifyOtp: async (payload) => {
     return ApiRequest.post(
-      `${env.api_base_url}${env.user_end_point}/verifyotp`,
+      `${env.api_base_url}${env.user_end_point}/verifyOTP`,
       payload
     );
   },
@@ -60,7 +60,7 @@ export const UserAuthApi = {
       `${env.api_base_url}${env.user_end_point}/check`,
     );
   },
- 
+
   logout: () => {
     return ApiRequest.post(
       `${env.api_base_url}${env.user_end_point}/logout`
