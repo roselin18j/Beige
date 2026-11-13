@@ -21,8 +21,6 @@ const ApiRequest = {
         try {
             const res = await API.get(url, { params });
 
-            console.log("Raw Product API Response:", res.data);
-
             return res.data;
 
         } catch (err) {

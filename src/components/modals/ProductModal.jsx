@@ -1,12 +1,21 @@
 import { useState, useEffect } from "react";
 import { money } from "../../data/products.js";
 import { ShoppingBag, X, Minus, Plus } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
+import { Toaster, toast } from "sonner";
+
+
 
 export default function ProductModal({ productId, products = [], onAdd, onClose }) {
   const product = products.find((p) => String(p.id) === String(productId));
 
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const userData = useSelector(selectAuthUser);
+  const isLogin = useSelector(selectIsLogin);
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (product) {
@@ -17,9 +26,29 @@ export default function ProductModal({ productId, products = [], onAdd, onClose 
 
   if (!product || !selectedVariant) return null;
 
-  const handleAddToBag = () => {
+
+const handleAddToBag = () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!isLogin || !token || !userData?.id) {
+      toast.error("Please login");
+      navigate("/login");
+      return;
+    }
+
+    if (!selectedVariant?.id) {
+      toast.error("Please select a variant");
+      return;
+    }
+
     onAdd(product.id, selectedVariant.id, quantity);
-  };
+
+  } catch (error) {
+    console.log("error", error);
+  }
+};
+
 
   return (
 
@@ -55,7 +84,7 @@ export default function ProductModal({ productId, products = [], onAdd, onClose 
               {product.name}
             </h2>
 
- 
+
             <div className="mt-6">
               <p className="mb-3 text-xs text-muted">Select size / shade</p>
 
@@ -65,11 +94,10 @@ export default function ProductModal({ productId, products = [], onAdd, onClose 
                     key={variant.id}
                     type="button"
                     onClick={() => setSelectedVariant(variant)}
-                    className={`flex items-center gap-2 border px-4 py-2 text-xs transition ${
-                      selectedVariant.id === variant.id
-                        ? "border-mocha bg-mocha text-white"
-                        : "border-line text-ink hover:border-mocha"
-                    }`}
+                    className={`flex items-center gap-2 border px-4 py-2 text-xs transition ${selectedVariant.id === variant.id
+                      ? "border-mocha bg-mocha text-white"
+                      : "border-line text-ink hover:border-mocha"
+                      }`}
                   >
                     {variant.color && (
                       <span

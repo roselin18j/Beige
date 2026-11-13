@@ -14,8 +14,55 @@ import WishlistModal from "./components/modals/WishlistModal.jsx";
 import ProductModal from "./components/modals/ProductModal.jsx";
 import SkinTestModal from "./components/modals/SkinTestModal.jsx";
 import TryOnModal from "./components/modals/TryOnModal";
+import { useDispatch, useSelector } from "react-redux";
+import { Wishlist } from "./redux/slices/commonSlice.jsx";
+import {
+  selectAuthUser,
+  selectIsLogin,
+} from "./redux/slices/authSlices.jsx";
 
 export default function App() {
+
+  const dispatch = useDispatch();
+
+  const userData = useSelector(selectAuthUser);
+  const isLogin = useSelector(selectIsLogin);
+
+  const userId = userData?.id || userData?._id;
+
+
+
+  useEffect(() => {
+    const GetWishList = async () => {
+      try {
+        const payload = {
+          type: "get",
+          userId,
+          email: userData?.email,
+        };
+
+        const res = await dispatch(Wishlist(payload)).unwrap();
+
+        const wishlistRecords = res?.data || [];
+
+        setWishlist(
+          wishlistRecords.map((item) => String(item.productId))
+        );
+
+        console.log("Wishlist Count:", wishlistRecords.length);
+
+      } catch (error) {
+        console.log("Wishlist error:", error);
+      }
+    };
+
+    if (!isLogin || !userId) {
+      setWishlist([]);
+      return;
+    }
+
+    GetWishList();
+  }, [dispatch, userId, isLogin]);
 
 
   const user = {
@@ -42,20 +89,19 @@ export default function App() {
 
 
   useEffect(() => {
-  let active = true;
+    let active = true;
 
-  getallProduct().then((loadedProducts) => {
-    console.log("Loaded Products:", loadedProducts);
+    getallProduct().then((loadedProducts) => {
 
-    if (active) {
-      setProducts(loadedProducts);
-    }
-  });
+      if (active) {
+        setProducts(loadedProducts);
+      }
+    });
 
-  return () => {
-    active = false;
-  };
-}, []);
+    return () => {
+      active = false;
+    };
+  }, []);
 
 
   const accountModalIds = [
@@ -197,12 +243,11 @@ export default function App() {
 
   const toggleWishlist = (id) => {
     setWishlist((current) =>
-      current.includes(id)
-        ? current.filter((itemId) => itemId !== id)
-        : [...current, id]
+      current.includes(String(id))
+        ? current.filter((itemId) => itemId !== String(id))
+        : [...current, String(id)]
     );
   };
-
 
   const handleLogout = () => {
     alert("Authentication logout API will be connected later.");

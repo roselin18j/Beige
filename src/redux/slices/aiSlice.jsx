@@ -1,10 +1,6 @@
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import ApiRequest from "../../utils/makeRequest";
 import { aiAnalyze } from "../../api/Aianalyze";
-
-
-
-
 
 export const skinAnalyze = createAsyncThunk(
     "ai/skinAnalyze",
@@ -14,14 +10,11 @@ export const skinAnalyze = createAsyncThunk(
             return res;
         } catch (err) {
             return rejectWithValue(
-                err?.response?.data || err?.message
-                    ? err.response?.data || { message: err.message }
-                    : { message: "Skin analysis failed." }
+                err?.response?.data || { message: err.message || "Skin analysis failed." }
             );
         }
     }
 );
-
 
 export const makeupBaseAnalyze = createAsyncThunk(
     "ai/makeupBaseAnalyze",
@@ -30,52 +23,38 @@ export const makeupBaseAnalyze = createAsyncThunk(
             const res = await aiAnalyze.makeupBaseAnalyze(payload);
             return res;
         } catch (err) {
-            return rejectWithValue(err?.response?.data || { message: err.message });
+            return rejectWithValue(
+                err?.response?.data || { message: err.message || "Makeup analysis failed." }
+            );
         }
     }
 );
 
-
 const initialState = {
-    userData: null,
-    wallets: null,
+    skinResult: null,
+    makeupResult: null,
     loading: false,
-    isLogin: false,
-    error: null,
-    authChecked: false
+    error: null
 };
 
-const authSlice = createSlice({
-    name: "auth",
+const aiSlice = createSlice({
+    name: "ai",
     initialState,
-    reducers: {
-        resetAuth: (state) => {
-            state.userData = null;
-            state.isLogin = false;
-            state.loading = false;
-            state.error = null;
-            state.authChecked = true;
-        },
-    },
+    reducers: {},
     extraReducers: (builder) => {
         builder
-
             .addCase(skinAnalyze.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
             .addCase(skinAnalyze.fulfilled, (state, action) => {
                 state.loading = false;
-                if (action.payload?.type == 0) {
-                    state.isLogin = true;
-                }
+                state.skinResult = action.payload;
             })
             .addCase(skinAnalyze.rejected, (state, action) => {
                 state.loading = false;
-                state.isLogin = false;
+                state.error = action.payload?.message || "Skin analysis failed.";
             })
-
-
 
             .addCase(makeupBaseAnalyze.pending, (state) => {
                 state.loading = true;
@@ -83,25 +62,13 @@ const authSlice = createSlice({
             })
             .addCase(makeupBaseAnalyze.fulfilled, (state, action) => {
                 state.loading = false;
-                if (action.payload?.type == 0) {
-                    state.isLogin = true;
-                }
+                state.makeupResult = action.payload;
             })
             .addCase(makeupBaseAnalyze.rejected, (state, action) => {
                 state.loading = false;
-                state.isLogin = false;
-            })
-
-
-    },
+                state.error = action.payload?.message || "Makeup analysis failed.";
+            });
+    }
 });
 
-
-export const { resetAuth } = authSlice.actions;
-export const selectAuthUser = (state) => state.auth.userData;
-export const selectIsLogin = (state) => state.auth.isLogin;
-export const selectAuthLoading = (state) => state.auth.loading;
-export const selectAuthError = (state) => state.auth.error;
-export const selectAuthChecked = (state) => state.auth.authChecked;
-export const selectUserWallet = (state) => state.auth.wallets;
-export default authSlice.reducer;
+export default aiSlice.reducer;
