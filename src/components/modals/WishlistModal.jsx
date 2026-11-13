@@ -12,8 +12,7 @@ import {
 import { Wishlist } from "../../redux/slices/commonSlice.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
-
-
+import { resetAuth } from "../../redux/slices/authSlices.jsx";
 
 
 export default function WishlistModal({
@@ -36,37 +35,83 @@ export default function WishlistModal({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const dispatch = useDispatch();
-  const [items, setitems] = useState([])
-
+  const [items, setitems] = useState([]);
 
   const userData = useSelector(selectAuthUser);
   const isLogin = useSelector(selectIsLogin);
 
-  console.log("User Data:", userData);
-  console.log("Is Login:", isLogin);
+  const userId = userData?._id || userData?.id;
 
 
+
+  const handleDelete = async (product) => {
+    try {
+      console.log("product-------------", product);
+
+      const payload = {
+        type: "delete",
+        userId: userId,
+        email: userData?.email,
+        productId: product.id
+      };
+
+      console.log("payload---------", payload);
+
+      const res = await dispatch(Wishlist(payload)).unwrap();
+
+      if (res?.status === true || res?.success === true) {
+        setitems((items) =>
+          items.filter((item) => String(item.id) !== String(product.id))
+        );
+
+        onToggleWish?.(product.id);
+      }
+
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+
+
+  const handleLogout = () => {
+    dispatch(resetAuth());
+    navigate("/login");
+  };
 
   useEffect(() => {
-    if (!userData?.id || !isLogin) return;
-    GetWishList()
-  }, [userData?.id, isLogin, dispatch]);
+    const GetWishList = async () => {
+      try {
+        const payload = {
+          type: "get",
+          userId: userId,
+          email: userData?.email,
+        };
 
+        const res = await dispatch(Wishlist(payload)).unwrap();
 
-  const GetWishList = (async () => {
-    try {
-      console.log('id------------', userData.id)
-      const payload = { type: "get", userId: userData.id, email: userData.email }
-      const res = await dispatch(Wishlist(payload)).unwrap()
-      console.log('res----', res)
-      setitems(res.data)
-    } catch (error) {
-      console.log('error', error)
+        const wishlistRecords = res?.data || [];
+
+        const wishlistProducts = products.filter((product) =>
+          wishlistRecords.some(
+            (item) => String(item.productId) === String(product.id)
+          )
+        );
+
+        console.log("Wishlist Products:", wishlistProducts);
+
+        setitems(wishlistProducts);
+      } catch (error) {
+        console.log("error", error);
+      }
+    };
+
+    if (!userId || !isLogin) {
+      setitems([]);
+      return;
     }
-  })
 
-
-
+    GetWishList();
+  }, [userId, isLogin, dispatch, products]);
 
   const email = user?.email || "";
 
@@ -191,123 +236,85 @@ export default function WishlistModal({
       {/* Scrollable content */}
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 pt-5 max-[991px]:px-3">
 
+
+
+
+
+
         {/* PROFILE TAB */}
         {activeTab === "accountModal" && (
-          <form onSubmit={handleProfileSubmit} className="space-y-5">
+          <div className="py-4">
 
-            <div>
-              <h3 className="text-[17px] max-[550px]:text-[15px] max-[450px]:text-[14px]">
-                Complete your registration
+            <div className="mb-6">
+              <h3 className="font-serif text-xl text-[#3F352D]">
+                My Profile
               </h3>
-
-              <p className="mt-1 text-xs text-[#8B7967]">
-                Add your details to complete your Beige account.
+              <p className="mt-1 text-sm text-[#8B7967]">
+                Your Beige account details
               </p>
             </div>
 
-            {/* Full name */}
-            <div>
-              <label
-                htmlFor="account-fullname"
-                className="mb-2 block text-sm"
-              >
-                Full name
-              </label>
+            <div className="border border-[#E7DCCF] bg-white p-5">
 
-              <input
-                id="account-fullname"
-                type="text"
-                autoComplete="name"
-                maxLength={100}
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                placeholder="Enter your full name"
-                className="w-full border border-[#DCCDBB] bg-white px-3 py-3 max-[550px]:py-2 text-sm outline-none transition focus:border-[#72543D]"
-              />
+              {/* Profile Icon */}
+              <div className="mb-5 flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F2EAE0] text-xl font-medium uppercase text-[#72543D]">
+                  {(userData?.name || "U").charAt(0)}
+                </div>
+
+                <div>
+                  <h4 className="text-base font-medium text-[#3F352D]">
+                    {userData?.name || "User"}
+                  </h4>
+                  <p className="mt-1 text-xs text-[#8B7967]">
+                    Beige Member
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4 border-t border-[#E7DCCF] pt-5">
+
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-[#9A8775]">
+                    Full Name
+                  </p>
+                  <p className="mt-1 text-sm text-[#3F352D]">
+                    {userData?.name || "Not available"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-[#9A8775]">
+                    Email Address
+                  </p>
+                  <p className="mt-1 break-all text-sm text-[#3F352D]">
+                    {userData?.email || "Not available"}
+                  </p>
+                </div>
+
+              </div>
             </div>
-
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="account-email"
-                className="mb-2 block text-sm"
-              >
-                Email
-              </label>
-
-              <input
-                id="account-email"
-                type="email"
-                value={email}
-                readOnly
-                className="w-full cursor-not-allowed border border-[#DCCDBB] bg-[#EEE6D9] px-3 py-3 text-sm text-[#8B7967] outline-none"
-              />
-
-              <p className="mt-1 text-xs text-[#8B7967]">
-                Your email is managed by your sign-in account.
-              </p>
-            </div>
-
-            {/* Mobile */}
-            {/* <div>
-              <label
-                htmlFor="account-mobile"
-                className="mb-2 block text-sm"
-              >
-                Mobile number
-              </label>
-
-              <input
-                id="account-mobile"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel"
-                maxLength={10}
-                value={mobile}
-                onChange={(e) =>
-                  setMobile(
-                    e.target.value.replace(/\D/g, "").slice(0, 10)
-                  )
-                }
-                required
-                placeholder="Enter your mobile number"
-                className="w-full border border-[#DCCDBB] bg-white px-3 py-3 max-[550px]:py-2 text-sm outline-none transition focus:border-[#72543D]"
-              />
-            </div> */}
-
-            {/* Feedback */}
-            {error && (
-              <p role="alert" className="text-sm text-red-600">
-                {error}
-              </p>
-            )}
-
-            {success && (
-              <p role="status" className="text-sm text-green-700">
-                {success}
-              </p>
-            )}
-
-            {/* Save */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#72543D] py-4 text-xs text-white transition hover:bg-[#5D4330] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? "Saving..." : "Create Beige account"}
-            </button>
 
             {/* Logout */}
             <button
               type="button"
-              onClick={onLogout}
-              className="text-sm underline underline-offset-4 transition hover:text-[#72543D]"
+              onClick={handleLogout}
+              className="mt-6 flex w-full items-center justify-center gap-2 border border-[#72543D] py-4 text-xs tracking-widest text-[#72543D] transition hover:bg-[#72543D] hover:text-white"
             >
-              Logout
+              LOGOUT
             </button>
-          </form>
+
+          </div>
         )}
+
+
+
+
+
+
+
+
+
 
         {/* PAST ORDERS TAB */}
         {activeTab === "pastOrderModal" && (
@@ -382,104 +389,135 @@ export default function WishlistModal({
           </>
         )}
 
+
+
+
         {/* WISHLIST TAB */}
         {activeTab === "wishlistModal" && (
-          <>
-            <h3 className="text-[17px] max-[550px]:text-[15px] max-[450px]:text-[14px]">
-              Your saved favourites
-            </h3>
+          <div className="pb-4">
+
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium tracking-wide">
+                  Your saved favourites
+                </h3>
+                <p className="mt-1 text-xs text-[#9A8775]">
+                  {items.length} {items.length === 1 ? "item" : "items"} saved for later
+                </p>
+              </div>
+
+              <Heart size={22} strokeWidth={1.4} className="text-[#72543D]" />
+            </div>
 
             {items.length === 0 ? (
-              <div className="flex min-h-[280px] flex-col items-center justify-center text-center">
+              <div className="flex min-h-[320px] flex-col items-center justify-center bg-[#F8F3ED] px-5 text-center">
 
-                <Heart
-                  size={29}
-                  strokeWidth={1.8}
-                  className="mb-3 text-[#3F352D]"
-                />
+                <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-white">
+                  <Heart size={27} strokeWidth={1.4} className="text-[#72543D]" />
+                </div>
 
-                <p className="text-[17px] font-semibold max-[550px]:text-[15px] max-[450px]:text-[14px]">
+                <h3 className="text-lg font-medium">
                   Your wishlist is waiting
-                </p>
+                </h3>
 
-                <p className="mt-2 text-sm leading-6 text-[#51463C]">
-                  Tap the heart on a product to save it here.
+                <p className="mt-2 max-w-xs text-sm leading-6 text-[#8B7967]">
+                  Save your favourite beauty products and keep everything you love in one place.
                 </p>
 
                 <button
                   type="button"
                   onClick={onClose}
-                  className="mt-5 bg-[#72543D] px-7 py-4 text-xs font-semibold text-white transition hover:bg-[#5D4330]"
+                  className="mt-7 bg-[#72543D] px-9 py-3.5 text-xs tracking-widest text-white transition hover:bg-[#5D4330]"
                 >
-                  Explore products
+                  EXPLORE PRODUCTS
                 </button>
               </div>
             ) : (
-              <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
                 {items.map((product) => {
-                  const startingPrice = Math.min(
-                    ...product.variants.map((v) => v.price)
-                  );
+                  const prices = (product.variants || [])
+                    .map((v) => Number(v.price))
+                    .filter((price) => Number.isFinite(price) && price > 0);
+
+                  const startingPrice = prices.length
+                    ? Math.min(...prices)
+                    : Number(product.price || 0);
 
                   return (
                     <div
                       key={product.id}
-                      className="flex gap-3 border border-[#E7DCCF] p-3"
+                      className="group overflow-hidden border border-[#E8DED2] bg-white transition duration-300 hover:border-[#C7B29D] hover:shadow-md"
                     >
-                      {/* Product image */}
-                      <button
-                        type="button"
-                        onClick={() => onView?.(product.id)}
-                        className="h-24 w-20 shrink-0 overflow-hidden bg-[#F3EAE0]"
-                      >
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="h-full w-full object-cover transition duration-300 hover:scale-105"
-                        />
-                      </button>
 
-                      {/* Product details */}
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <p className="text-[10px] uppercase tracking-wider text-[#8B7967]">
+                      {/* Product Image */}
+                      <div className="relative h-[230px] overflow-hidden bg-[#F5EFE8] sm:h-[250px]">
+
+                        <button
+                          type="button"
+                          onClick={() => onView?.(product.id)}
+                          className="h-full w-full"
+                        >
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                          />
+                        </button>
+
+                        {/* Remove Wishlist */}
+                        <button
+                          type="button"
+                          //  onClick={() => onToggleWish?.(product.id)}
+                          onClick={() => handleDelete(product)}
+                          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#72543D] shadow-sm transition hover:bg-[#72543D] hover:text-white"
+                          aria-label={`Remove ${product.name} from wishlist`}
+                        >
+                          <Trash2 size={16} strokeWidth={1.6} />
+                        </button>
+
+                      </div>
+
+                      {/* Product Details */}
+                      <div className="p-5">
+
+                        <p className="text-[10px] uppercase tracking-[2px] text-[#9A8775]">
                           {product.category}
                         </p>
 
                         <button
                           type="button"
                           onClick={() => onView?.(product.id)}
-                          className="mt-1 text-left text-sm font-medium"
+                          className="mt-2 block w-full text-left font-serif text-base leading-6 text-[#3F352D] transition hover:text-[#9A7655]"
                         >
                           {product.name}
                         </button>
 
-                        <p className="mt-1 text-sm">
-                          From {money(startingPrice)}
-                        </p>
+                        <div className="mt-3 flex items-center justify-between border-t border-[#EEE6DC] pt-3">
+                          <span className="text-xs text-[#8B7967]">
+                            Starting from
+                          </span>
 
-                        <div className="mt-auto flex items-center gap-3 pt-3">
-                          <button
-                            type="button"
-                            onClick={() => onAdd(product.id)}
-                            className="flex items-center gap-1 text-xs text-[#72543D] transition hover:text-[#5D4330]"
-                          >
-                            <ShoppingBag size={14} />
-                            Add to bag
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => onToggleWish?.(product.id)}
-                            className="text-[#8B7967] transition hover:text-red-500"
-                            aria-label={`Remove ${product.name} from wishlist`}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <span className="text-base font-medium text-[#72543D]">
+                            {money(startingPrice)}
+                          </span>
                         </div>
+
+                        {/* Add to Bag */}
+                        <button
+                          type="button"
+                          onClick={() => onAdd?.(product.id)}
+                          className="mt-5 flex w-full items-center justify-center gap-2 bg-[#72543D] py-3.5 text-xs tracking-widest text-white transition hover:bg-[#5D4330]"
+                        >
+                          <ShoppingBag size={15} strokeWidth={1.5} />
+                          ADD TO BAG
+                        </button>
+
                       </div>
                     </div>
                   );
                 })}
+
               </div>
             )}
 
@@ -487,13 +525,20 @@ export default function WishlistModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-6 w-full bg-[#72543D] py-4 text-xs text-white transition hover:bg-[#5D4330]"
+                className="mt-7 w-full border border-[#72543D] py-4 text-xs tracking-widest text-[#72543D] transition hover:bg-[#72543D] hover:text-white"
               >
-                Continue shopping
+                CONTINUE SHOPPING
               </button>
             )}
-          </>
+
+          </div>
         )}
+
+
+
+
+
+
       </div>
     </div>
   );

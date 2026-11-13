@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { UserRound, Heart, ShoppingBag, Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { selectAuthUser, selectIsLogin } from "../redux/slices/authSlices.jsx";
+import { Wishlist } from "../redux/slices/commonSlice.jsx";
+import { useDispatch, useSelector } from "react-redux";
 
 const headerNav = {
   SkinCare: "Skin care",
@@ -25,17 +28,44 @@ function Logo({ className = "" }) {
   );
 }
 
-export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
+export default function Header({ bagCount,wishCount, onCategory, onOpen }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const closeMenu = () => setMenuOpen(false);
+  const dispatch = useDispatch();
 
+
+  const userData = useSelector(selectAuthUser);
+  const isLogin = useSelector(selectIsLogin);
+
+
+  useEffect(() => {
+   GetWishList()
+  }, [])
+
+
+   const GetWishList = async () => {
+      try {
+        const payload = {
+          type: "get",
+          userId: userData.id,
+          email: userData?.email,
+        };
+
+        const res = await dispatch(Wishlist(payload)).unwrap();
+
+      console.log('res', res.data.length)
+
+      } catch (error) {
+        console.log("error", error);
+      }
+    }
   const goToShop = () => {
     closeMenu();
     // wait for the drawer to start closing so the scroll feels smooth
     setTimeout(() => {
       document.getElementById("shop")?.scrollIntoView({
-        behavior: "smooth",
+        behavior: "smooth", 
         block: "start",
       });
     }, 150);
@@ -107,7 +137,7 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
           </button>
 
 
-          <span className="hidden sm:inline max-md:hidden" onClick={() => navigate("/login") } >Login / Register</span>
+          <span className="hidden sm:inline max-md:hidden" onClick={() => navigate("/login")} >Login / Register</span>
 
 
           <button
@@ -212,8 +242,8 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
                 onClick={goToShop}
                 style={{ transitionDelay: menuOpen ? `${80 + i * 40}ms` : "0ms" }}
                 className={`block w-full border-b border-line py-4 text-left text-[15px] text-ink transition-all duration-300 hover:text-rose ${menuOpen
-                    ? "translate-x-0 opacity-100"
-                    : "translate-x-3 opacity-0"
+                  ? "translate-x-0 opacity-100"
+                  : "translate-x-3 opacity-0"
                   }`}
               >
                 {label}

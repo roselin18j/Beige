@@ -1,6 +1,12 @@
 
 import { money } from "../data/products.js";
 import { Heart, ShoppingBag, Plus } from "lucide-react";
+import { Wishlist } from "../redux/slices/commonSlice.jsx";
+import { useDispatch, useSelector } from "react-redux";
+import { selectAuthUser, selectIsLogin } from "../redux/slices/authSlices.jsx";
+import { useNavigate } from "react-router-dom";
+import { Toaster, toast } from "sonner";
+
 
 export function ProductArt({ product }) {
   return (
@@ -28,15 +34,39 @@ export default function ProductCard({
   );
 
   const hasColors = p.variants.some((variant) => variant.color);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const userData = useSelector(selectAuthUser);
+  const isLogin = useSelector(selectIsLogin);
 
-
-  const handleHeart = (async(p) => {
+  const handleHeart = async (p) => {
     try {
-     onToggleWish(p.id)
+      const token = localStorage.getItem("token");
+
+      if (!isLogin || !token || !userData?.id) {
+        navigate("/login");
+        return toast.error("Please login");
+
+      }
+
+      const payload = {
+        type: "post",
+        userId: userData.id,
+        productId: p.id,
+        email: userData.email
+      };
+
+      console.log("payload", payload);
+
+      const res = await dispatch(Wishlist(payload)).unwrap();
+
+
+      onToggleWish(p.id);
+
     } catch (error) {
-      console.log('error', error)
+      console.log("error", error);
     }
-  })
+  };
 
   return (
     <article className="group min-w-0">
@@ -65,13 +95,12 @@ export default function ProductCard({
         {/* Wishlist */}
         <button
           type="button"
-         // onClick={() => onToggleWish(p.id)}
-         onClick={() => handleHeart(p)}
+          // onClick={() => onToggleWish(p.id)}
+          onClick={() => handleHeart(p)}
           aria-label={`Save ${p.name}`}
           aria-pressed={saved}
-          className={`absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-white/90 transition-colors ${
-            saved ? "text-rose" : "text-mocha hover:text-rose"
-          }`}
+          className={`absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-white/90 transition-colors ${saved ? "text-rose" : "text-mocha hover:text-rose"
+            }`}
         >
           <Heart
             size={15}

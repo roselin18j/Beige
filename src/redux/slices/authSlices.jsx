@@ -79,21 +79,31 @@ export const resetPassword = createAsyncThunk(
     }
 );
 
+
+
+
 const initialState = {
-    userData: null,
+    userData: JSON.parse(localStorage.getItem("userData")) || null,
     wallets: null,
     loading: false,
-    isLogin: false,
+    isLogin: !!localStorage.getItem("token"),
     error: null,
-    authChecked: false
+    authChecked: true
 };
+
 
 const authSlice = createSlice({
     name: "auth",
     initialState,
     reducers: {
         resetAuth: (state) => {
+            // Clear localStorage
+            localStorage.removeItem("token");
+            localStorage.removeItem("userData");
+
+            // Clear Redux state
             state.userData = null;
+            state.wallets = null;
             state.isLogin = false;
             state.loading = false;
             state.error = null;
@@ -154,26 +164,31 @@ const authSlice = createSlice({
             // })
 
 
+
             .addCase(verifyLoginOtp.fulfilled, (state, action) => {
                 state.loading = false;
 
-                state.userData =
-                    action.payload?.data?.user ??
-                    action.payload?.user ??
-                    action.payload?.data?.data?.user ??
-                    state.userData;
+                const response = action.payload;
 
-                state.isLogin = true;
+                if (response?.success) {
+                    // Store JWT token
+                    localStorage.setItem("token", response.token);
+
+                    // Store user data
+                    state.userData = response.user;
+                    localStorage.setItem("userData", JSON.stringify(response.user));
+
+                    state.isLogin = true;
+                }
+
                 state.authChecked = true;
             })
-
 
             .addCase(verifyLoginOtp.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload?.message || "Invalid or expired code";
             })
 
-            
             .addCase(forgotPassword.pending, (state) => {
                 state.loading = true;
                 state.error = null;

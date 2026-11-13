@@ -45,44 +45,30 @@ export const Wishlist = createAsyncThunk(
 
 
 const initialState = {
-    userData: null,
-    wallets: null,
+    products: [],
+    wishlist: [],
     loading: false,
-    isLogin: false,
-    error: null,
-    authChecked: false
+    error: null
 };
 
-const authSlice = createSlice({
-    name: "auth",
+const commonSlice = createSlice({
+    name: "common",
     initialState,
-    reducers: {
-        resetAuth: (state) => {
-            state.userData = null;
-            state.isLogin = false;
-            state.loading = false;
-            state.error = null;
-            state.authChecked = true;
-        },
-    },
+    reducers: {},
     extraReducers: (builder) => {
         builder
-
             .addCase(productList.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
             .addCase(productList.fulfilled, (state, action) => {
                 state.loading = false;
-                if (action.payload?.type == 0) {
-                    state.isLogin = true;
-                }
+                state.products = action.payload?.data || [];
             })
             .addCase(productList.rejected, (state, action) => {
                 state.loading = false;
-                state.isLogin = false;
+                state.error = action.payload?.message || "Failed to fetch products.";
             })
-
 
             .addCase(Wishlist.pending, (state) => {
                 state.loading = true;
@@ -90,28 +76,13 @@ const authSlice = createSlice({
             })
             .addCase(Wishlist.fulfilled, (state, action) => {
                 state.loading = false;
-                if (action.payload?.type == 0) {
-                    state.isLogin = true;
-                }
+                state.wishlist = action.payload?.data || [];
             })
             .addCase(Wishlist.rejected, (state, action) => {
                 state.loading = false;
-                state.isLogin = false;
-            })
-
-
-
-
-
-    },
+                state.error = action.payload?.message || "Failed to fetch wishlist.";
+            });
+    }
 });
 
-
-export const { resetAuth } = authSlice.actions;
-export const selectAuthUser = (state) => state.auth.userData;
-export const selectIsLogin = (state) => state.auth.isLogin;
-export const selectAuthLoading = (state) => state.auth.loading;
-export const selectAuthError = (state) => state.auth.error;
-export const selectAuthChecked = (state) => state.auth.authChecked;
-export const selectUserWallet = (state) => state.auth.wallets;
-export default authSlice.reducer;
+export default commonSlice.reducer;
