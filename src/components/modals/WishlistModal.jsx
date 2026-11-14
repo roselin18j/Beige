@@ -9,7 +9,7 @@ import {
   Trash2,
   Package,
 } from "lucide-react";
-import { Wishlist } from "../../redux/slices/commonSlice.jsx";
+import { Wishlist, pastOrders } from "../../redux/slices/commonSlice.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
 import { resetAuth } from "../../redux/slices/authSlices.jsx";
@@ -18,7 +18,7 @@ import { resetAuth } from "../../redux/slices/authSlices.jsx";
 export default function WishlistModal({
   initialTab = "wishlistModal",
   user,
-  orders = [],
+  //orders = [],
   wishlist,
   products = [],
   onAdd,
@@ -36,6 +36,7 @@ export default function WishlistModal({
   const [success, setSuccess] = useState("");
   const dispatch = useDispatch();
   const [items, setitems] = useState([]);
+  const [orders, setorders] = useState([])
 
   const userData = useSelector(selectAuthUser);
   const isLogin = useSelector(selectIsLogin);
@@ -44,9 +45,34 @@ export default function WishlistModal({
 
 
 
+
+
+  useEffect(() => {
+    if (userId) {
+      PastOrders();
+    }
+  }, [userId]);
+
+  const PastOrders = async () => {
+    try {
+      const payload = {
+        userid: userId,
+      };
+
+      const res = await dispatch(pastOrders(payload)).unwrap();
+
+      const OrdersDetails = res?.orderList || res?.data?.orderList || [];
+
+      setorders(OrdersDetails);
+
+    } catch (error) {
+      console.log("Past Orders Error:", error);
+      setOrders([]);
+    }
+  };
+
   const handleDelete = async (product) => {
     try {
-      console.log("product-------------", product);
 
       const payload = {
         type: "delete",
@@ -54,8 +80,6 @@ export default function WishlistModal({
         email: userData?.email,
         productId: product.id
       };
-
-      console.log("payload---------", payload);
 
       const res = await dispatch(Wishlist(payload)).unwrap();
 
@@ -115,7 +139,10 @@ export default function WishlistModal({
 
   const email = user?.email || "";
 
-  // Profile form
+
+
+
+
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
 
@@ -317,7 +344,7 @@ export default function WishlistModal({
 
 
         {/* PAST ORDERS TAB */}
-        {activeTab === "pastOrderModal" && (
+        {/* {activeTab === "pastOrderModal" && (
           <>
             <div className="flex items-center justify-between">
               <h3 className="text-[17px] max-[550px]:text-[15px] max-[450px]:text-[14px]">
@@ -387,7 +414,201 @@ export default function WishlistModal({
               </div>
             )}
           </>
+        )} */}
+
+
+
+
+
+        {/* PAST ORDERS TAB */}
+        {activeTab === "pastOrderModal" && (
+          <>
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-[17px] max-[550px]:text-[15px]">
+                  Your past orders
+                </h3>
+                <p className="mt-1 text-xs text-[#8B7967]">
+                  {orders.length} orders placed
+                </p>
+              </div>
+            </div>
+
+            {orders.length === 0 ? (
+              <div className="flex min-h-[280px] flex-col items-center justify-center text-center">
+                <ShoppingBag
+                  size={34}
+                  strokeWidth={1.5}
+                  className="mb-3 text-[#3F352D]"
+                />
+
+                <p className="text-[17px] font-semibold">
+                  No orders yet
+                </p>
+
+                <p className="mt-2 max-w-sm text-sm leading-6 text-[#51463C]">
+                  Your orders will appear here when you check out while signed in.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="mt-7 bg-[#72543D] px-7 py-4 text-xs text-white"
+                >
+                  Explore products
+                </button>
+              </div>
+            ) : (
+              <div className="mt-5 space-y-5">
+                {orders.map((order) => (
+                  <div
+                    key={order._id || order.orderId}
+                    className="overflow-hidden border border-[#E7DCCF] bg-white"
+                  >
+                    {/* Order Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E7DCCF] bg-[#F8F3ED] p-4">
+                      <div>
+                        <p className="text-xs text-[#8B7967]">
+                          Order ID
+                        </p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {order.orderId}
+                        </p>
+                      </div>
+
+                      <span className="bg-[#E9DFD3] px-3 py-1.5 text-xs text-[#72543D]">
+                        {order.deliveryStatus || order.productStatus}
+                      </span>
+                    </div>
+
+                    {/* Order Information */}
+                    <div className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-3">
+                      <div>
+                        <p className="text-xs text-[#9A8775]">
+                          Order Date
+                        </p>
+                        <p className="mt-1 text-sm">
+                          {order.orderdate
+                            ? new Date(order.orderdate).toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric"
+                            })
+                            : "N/A"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-[#9A8775]">
+                          Invoice ID
+                        </p>
+                        <p className="mt-1 break-all text-sm">
+                          {order.invoiceId || "N/A"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-[#9A8775]">
+                          Total Amount
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-[#72543D]">
+                          {money(order.amount || 0)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Products */}
+                    <div className="border-t border-[#E7DCCF] p-4">
+                      <h4 className="mb-4 text-sm font-semibold">
+                        Ordered Products
+                      </h4>
+
+                      <div className="space-y-4">
+                        {(order.product || []).map((product, index) => {
+                          const image = product.productimages?.[0];
+
+                          const imageUrl =
+                            typeof image === "string"
+                              ? image
+                              : image?.media || "";
+
+                          return (
+                            <div
+                              key={product._id || index}
+                              className="flex gap-4 border-b border-[#EEE6DC] pb-4 last:border-0 last:pb-0"
+                            >
+                              <img
+                                src={imageUrl || "https://placehold.co/100x100"}
+                                alt={product.productname}
+                                className="h-20 w-20 rounded-sm bg-[#F8F3ED] object-cover"
+                              />
+
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-[#3F352D]">
+                                  {product.productname}
+                                </p>
+
+                                {(product.productdetails || []).map(
+                                  (detail, detailIndex) => (
+                                    <div key={detail._id || detailIndex}>
+                                      <p className="mt-1 text-xs text-[#8B7967]">
+                                        Quantity: {detail.quantity}
+                                      </p>
+
+                                      {detail.size && (
+                                        <p className="mt-1 text-xs text-[#8B7967]">
+                                          Size: {detail.size}
+                                        </p>
+                                      )}
+
+                                      {detail.shade && (
+                                        <p className="mt-1 text-xs text-[#8B7967]">
+                                          Shade: {detail.shade}
+                                        </p>
+                                      )}
+
+                                      <p className="mt-2 text-sm font-semibold text-[#72543D]">
+                                        {money(detail.price || 0)}
+                                      </p>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Delivery Address */}
+                    <div className="border-t border-[#E7DCCF] bg-[#FDFBF8] p-4">
+                      <h4 className="mb-2 text-sm font-semibold">
+                        Delivery Address
+                      </h4>
+
+                      <p className="text-sm text-[#51463C]">
+                        {order.delivery_Address?.name || "N/A"}
+                      </p>
+
+                      <p className="mt-1 break-all text-xs text-[#8B7967]">
+                        {order.delivery_Address?.email || ""}
+                      </p>
+
+                      <p className="mt-1 text-xs text-[#8B7967]">
+                        {order.delivery_Address?.mobile || ""}
+                      </p>
+
+                      <p className="mt-1 text-xs text-[#8B7967]">
+                        {order.delivery_Address?.address || ""}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
+
 
 
 

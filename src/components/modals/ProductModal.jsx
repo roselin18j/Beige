@@ -1,21 +1,22 @@
+
 import { useState, useEffect } from "react";
 import { money } from "../../data/products.js";
 import { ShoppingBag, X, Minus, Plus } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
+import { cartList } from "../../redux/slices/commonSlice.jsx";
 
-
-
-export default function ProductModal({ productId, products = [], onAdd, onClose }) {
+export default function ProductModal({ productId,onBagCountChange, products = [], onAdd, onClose }) {
   const product = products.find((p) => String(p.id) === String(productId));
 
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const userData = useSelector(selectAuthUser);
   const isLogin = useSelector(selectIsLogin);
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (product) {
@@ -26,32 +27,42 @@ export default function ProductModal({ productId, products = [], onAdd, onClose 
 
   if (!product || !selectedVariant) return null;
 
+  const handleAddToBag = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-const handleAddToBag = () => {
-  try {
-    const token = localStorage.getItem("token");
+      if (!isLogin || !token || !userData?.id) {
+        toast.error("Please login");
+        navigate("/login");
+        return;
+      }
 
-    if (!isLogin || !token || !userData?.id) {
-      toast.error("Please login");
-      navigate("/login");
-      return;
+      if (!selectedVariant?.id) {
+        toast.error("Please select a variant");
+        return;
+      }
+
+      const payload = {
+        userid: userData.id,
+        productid: product._id || product.id.split("-")[0],
+        variantid: selectedVariant.id,
+        quantity,
+        type: "post"
+      };
+
+      const res = await dispatch(cartList(payload)).unwrap();
+
+      onBagCountChange?.();
+
+      onAdd(product.id, selectedVariant.id, quantity);
+
+    } catch (error) {
+      console.log("error", error);
+      toast.error(error?.message || "Unable to add product to bag");
     }
-
-    if (!selectedVariant?.id) {
-      toast.error("Please select a variant");
-      return;
-    }
-
-    onAdd(product.id, selectedVariant.id, quantity);
-
-  } catch (error) {
-    console.log("error", error);
-  }
-};
-
+  };
 
   return (
-
     <div className="relative flex max-h-[90vh] w-full flex-col overflow-hidden">
       <button
         type="button"
@@ -62,10 +73,8 @@ const handleAddToBag = () => {
         <X size={20} />
       </button>
 
-
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="flex flex-col lg:flex-row lg:items-stretch">
-
           <div className="relative aspect-[4/3] w-full shrink-0 bg-cream lg:aspect-auto lg:min-h-[480px] lg:w-1/2">
             <img
               src={product.image}
@@ -74,7 +83,6 @@ const handleAddToBag = () => {
             />
           </div>
 
-          {/* Details */}
           <div className="flex flex-col justify-center p-6 sm:p-8 lg:w-1/2">
             <p className="mb-3 text-xs tracking-[0.2em] text-muted">
               {product.tag || product.category}
@@ -83,7 +91,6 @@ const handleAddToBag = () => {
             <h2 className="font-serif text-2xl leading-tight text-ink sm:text-3xl">
               {product.name}
             </h2>
-
 
             <div className="mt-6">
               <p className="mb-3 text-xs text-muted">Select size / shade</p>
@@ -95,8 +102,8 @@ const handleAddToBag = () => {
                     type="button"
                     onClick={() => setSelectedVariant(variant)}
                     className={`flex items-center gap-2 border px-4 py-2 text-xs transition ${selectedVariant.id === variant.id
-                      ? "border-mocha bg-mocha text-white"
-                      : "border-line text-ink hover:border-mocha"
+                        ? "border-mocha bg-mocha text-white"
+                        : "border-line text-ink hover:border-mocha"
                       }`}
                   >
                     {variant.color && (
@@ -110,7 +117,6 @@ const handleAddToBag = () => {
                 ))}
               </div>
             </div>
-
 
             <div className="mt-5">
               <p className="font-serif text-2xl">
@@ -148,7 +154,6 @@ const handleAddToBag = () => {
                 </button>
               </div>
             </div>
-
 
             <button
               type="button"

@@ -15,7 +15,7 @@ import ProductModal from "./components/modals/ProductModal.jsx";
 import SkinTestModal from "./components/modals/SkinTestModal.jsx";
 import TryOnModal from "./components/modals/TryOnModal";
 import { useDispatch, useSelector } from "react-redux";
-import { Wishlist } from "./redux/slices/commonSlice.jsx";
+import { Wishlist, cartList } from "./redux/slices/commonSlice.jsx";
 import {
   selectAuthUser,
   selectIsLogin,
@@ -27,8 +27,35 @@ export default function App() {
 
   const userData = useSelector(selectAuthUser);
   const isLogin = useSelector(selectIsLogin);
-
+  const [bagCount, setBagCount] = useState(0);
   const userId = userData?.id || userData?._id;
+  const orders = [];
+  const [category, setCategory] = useState("All products");
+  const [search, setSearch] = useState("");
+  const [cart, setCart] = useState({});
+  const [products, setProducts] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [modal, setModal] = useState(null);
+
+
+  const GetBagCount = async () => {
+    try {
+      const payload = {
+        userid: userId,
+        type: "get",
+      };
+
+      const res = await dispatch(cartList(payload)).unwrap();
+
+      const cartRecords = res?.data?.product || [];
+
+      setBagCount(cartRecords.length);
+
+
+    } catch (error) {
+      console.log("Bag Count Error:", error);
+    }
+  };
 
 
 
@@ -49,7 +76,6 @@ export default function App() {
           wishlistRecords.map((item) => String(item.productId))
         );
 
-        console.log("Wishlist Count:", wishlistRecords.length);
 
       } catch (error) {
         console.log("Wishlist error:", error);
@@ -65,6 +91,15 @@ export default function App() {
   }, [dispatch, userId, isLogin]);
 
 
+  useEffect(() => {
+    if (isLogin && userId) {
+      GetBagCount();
+    } else {
+      setBagCount(0);
+    }
+  }, [dispatch, userId, isLogin]);
+
+
   const user = {
     id: "user_123",
     name: "Test",
@@ -73,16 +108,6 @@ export default function App() {
   };
 
 
-
-  const orders = [];
-
-  const [category, setCategory] = useState("All products");
-  const [search, setSearch] = useState("");
-
-  const [cart, setCart] = useState({});
-  const [products, setProducts] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
-  const [modal, setModal] = useState(null);
 
 
 
@@ -260,10 +285,7 @@ export default function App() {
     alert("Profile update API will be connected later.");
   };
 
-  const bagCount = Object.values(cart).reduce(
-    (total, quantity) => total + Number(quantity || 0),
-    0
-  );
+
 
 
 
@@ -297,6 +319,7 @@ export default function App() {
             onRemove={removeFromCart}
             onUpdateQuantity={updateCartQuantity}
             onClose={close}
+            onBagCountChange={GetBagCount}
           />
         );
 
@@ -323,6 +346,7 @@ export default function App() {
           <ProductModal
             productId={modal.productId}
             products={products}
+            onBagCountChange={GetBagCount}
             onClose={close}
             onAdd={(productId, variantId, quantity) => {
               const success = addToCart(

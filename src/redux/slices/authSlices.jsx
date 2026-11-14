@@ -113,7 +113,6 @@ const authSlice = createSlice({
     extraReducers: (builder) => {
         builder
 
-            // new register
 
             .addCase(LoginUser.pending, (state) => {
                 state.loading = true;
@@ -157,11 +156,6 @@ const authSlice = createSlice({
                 state.error = null;
             })
 
-            // .addCase(verifyLoginOtp.fulfilled, (state, action) => {
-            //     state.loading = false;
-            //     state.userData = action.payload?.data?.user ?? action.payload?.user ?? state.userData;
-            //     state.isLogin = true;
-            // })
 
 
 
@@ -171,13 +165,9 @@ const authSlice = createSlice({
                 const response = action.payload;
 
                 if (response?.success) {
-                    // Store JWT token
                     localStorage.setItem("token", response.token);
-
-                    // Store user data
                     state.userData = response.user;
                     localStorage.setItem("userData", JSON.stringify(response.user));
-
                     state.isLogin = true;
                 }
 
