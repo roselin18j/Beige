@@ -28,44 +28,41 @@ function Logo({ className = "" }) {
   );
 }
 
-export default function Header({ bagCount,wishCount, onCategory, onOpen }) {
+export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const closeMenu = () => setMenuOpen(false);
   const dispatch = useDispatch();
-
-
   const userData = useSelector(selectAuthUser);
   const isLogin = useSelector(selectIsLogin);
 
 
   useEffect(() => {
-   GetWishList()
+    GetWishList()
   }, [])
 
 
-   const GetWishList = async () => {
-      try {
-        const payload = {
-          type: "get",
-          userId: userData.id,
-          email: userData?.email,
-        };
+  const GetWishList = async () => {
+    try {
+      const payload = {
+        type: "get",
+        userId: userData.id,
+        email: userData?.email,
+      };
 
-        const res = await dispatch(Wishlist(payload)).unwrap();
+      const res = await dispatch(Wishlist(payload)).unwrap();
 
-      console.log('res', res.data.length)
 
-      } catch (error) {
-        console.log("error", error);
-      }
+    } catch (error) {
+      console.log("error", error);
     }
+  }
   const goToShop = () => {
     closeMenu();
     // wait for the drawer to start closing so the scroll feels smooth
     setTimeout(() => {
       document.getElementById("shop")?.scrollIntoView({
-        behavior: "smooth", 
+        behavior: "smooth",
         block: "start",
       });
     }, 150);

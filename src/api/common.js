@@ -18,4 +18,37 @@ export const commonApi = {
   },
 
 
+  cartList : async (payload) => {
+    return ApiRequest.post(
+      `${env.api_base_url}${env.user_end_point}/cart`,
+      payload
+    );
+  },
+
+  createOrder : async (payload) => {
+    return ApiRequest.post(
+      `${env.api_base_url}${env.user_end_point}/create-order`,
+      payload
+    );
+  },
+
+
+    verifyPayment : async (payload) => {
+    return ApiRequest.post(
+      `${env.api_base_url}${env.user_end_point}/verify-payments`,
+      payload
+    );
+  },
+
+
+  pastOrders : async (payload) => {
+    return ApiRequest.post(
+      `${env.api_base_url}${env.user_end_point}/past-orders`,
+      payload
+    );
+  },
+
+
+
+
 };

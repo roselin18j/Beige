@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   GripHorizontal,
   Minus,
@@ -10,6 +10,35 @@ import {
 } from "lucide-react";
 
 import { money, FREE_SHIPPING_THRESHOLD } from "../../data/products.js";
+import { cartList } from "../../redux/slices/commonSlice.jsx"
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
+import { toast } from "sonner";
+import { createOrder, verifyPayment } from "../../redux/slices/commonSlice.jsx";
+
+
+
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+
+    document.body.appendChild(script);
+  });
+};
+
+
 
 export default function CartModal({
   cart,
@@ -17,32 +46,273 @@ export default function CartModal({
   onRemove,
   onUpdateQuantity,
   onClose,
-  onExplore, 
+  onExplore,
+  onBagCountChange,
 }) {
+
+  const [cartProducts, setCartProducts] = useState([]);
+  const userData = useSelector(selectAuthUser);
+  const isLogin = useSelector(selectIsLogin);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handlePay = async () => {
+    try {
+      if (!isLogin || !userData?.id) {
+        toast.error("Please login first");
+        navigate("/login");
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        toast.error("Session expired. Please login again.");
+        navigate("/login");
+        return;
+      }
+
+      if (!lines.length) {
+        toast.error("Your cart is empty");
+        return;
+      }
+
+      const isLoaded = await loadRazorpay();
+
+      if (!isLoaded || !window.Razorpay) {
+        toast.error("Unable to load Razorpay checkout");
+        return;
+      }
+
+      const totalAmount = lines.reduce((total, item) => {
+        return total + item.variant.price * item.qty;
+      }, 0);
+
+      if (totalAmount <= 0) {
+        toast.error("Invalid payment amount");
+        return;
+      }
+
+      const orderResponse = await dispatch(
+        createOrder({
+          amount: totalAmount,
+          userId: userData.id
+        })
+      ).unwrap();
+
+
+      const razorpayOrderData = orderResponse?.data || orderResponse;
+
+      if (!razorpayOrderData?.success || !razorpayOrderData?.order?.id) {
+        toast.error(
+          razorpayOrderData?.message || "Unable to create payment order"
+        );
+        return;
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: razorpayOrderData.order.amount,
+        currency: razorpayOrderData.order.currency,
+        name: "NEWME",
+        description: "Beauty and Skincare Products",
+        order_id: razorpayOrderData.order.id,
+
+        handler: async function (response) {
+          try {
+
+            const orderData = {
+              product: lines.map(item => ({
+                productid: item.product.id,
+                category: item.category,
+                productname: item.product.name,
+                productimages: item.product.image,
+
+                productdetails: [{
+                  price: item.variant.price,
+                  gstPrice: item.variant.gstPrice,
+                  size: item.variant.size,
+                  shade: item.variant.shade,
+                  quantity: item.qty,
+                  discount_price: item.variant.discount_price
+                }]
+              })),
+
+
+              delivery_Address: {
+                name: userData.name,
+                mobile: userData.mobile,
+                email: userData.email,
+                address: userData.address
+              },
+
+              productStatus: "Ordered",
+              shippingCharge: 0,
+              gstPercentage: 0,
+              totalDiscount: 0,
+              barcode: "",
+              couponDiscount: 0,
+              couponDiscountAmount: 0,
+              promoCode: "",
+              deliveryDate: null
+            };
+
+            const payload = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              userid: userData.id,
+              orderData: orderData
+            };
+
+
+            const verifyResponse = await dispatch(
+              verifyPayment(payload)
+            ).unwrap();
+
+
+            const verifyData = verifyResponse?.data || verifyResponse;
+
+            if (verifyData?.success) {
+              toast.success("Payment successful!");
+
+              await GetCart();
+              onBagCountChange?.();
+              onClose?.();
+
+            } else {
+              toast.error(
+                verifyData?.message || "Payment verification failed"
+              );
+            }
+
+          } catch (error) {
+            console.log("Verification Error:", error);
+
+            toast.error(
+              error?.message || "Unable to verify payment"
+            );
+          }
+        },
+
+        modal: {
+          ondismiss: function () {
+            console.log("Razorpay checkout closed");
+          }
+        },
+
+        theme: {
+          color: "#8B5E3C"
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+
+      razorpay.on("payment.failed", function (response) {
+        console.log("Payment Failed:", response.error);
+
+        toast.error(
+          response.error?.description || "Payment failed"
+        );
+      });
+
+      razorpay.open();
+
+    } catch (error) {
+      console.log("Payment Error:", error);
+
+      toast.error(
+        error?.message || "Unable to process payment"
+      );
+    }
+  };
+
+
+
+
+
+
   const lines = useMemo(() => {
-    return Object.entries(cart ?? {})
-      .map(([key, qty]) => {
-        const [productId, variantId] = key.split(":");
+    return cartProducts.map((item) => {
+      const product = item.productid;
 
-        const product = products.find(
-          (p) => String(p.id) === productId
+      return {
+        key: item._id,
+        product: {
+          id: product._id,
+          name: product.productname,
+          image: product.productimages?.[0]?.media || "",
+        },
+        variant: {
+          id: product._id,
+          price: Number(product.final_price || product.price || 0),
+          label: "",
+          color: null,
+        },
+        qty: Number(item.quantity || 1),
+      };
+    });
+  }, [cartProducts]);
+
+  useEffect(() => {
+    if (isLogin && userData?.id) {
+      GetCart();
+    }
+  }, [isLogin, userData?.id]);
+
+
+  const GetCart = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!isLogin || !token || !userData?.id) {
+        toast.error("Please login");
+        navigate("/login");
+        return;
+      }
+
+      const payload = {
+        userid: userData.id,
+        type: "get"
+      };
+
+      const res = await dispatch(cartList(payload)).unwrap();
+
+
+      setCartProducts(res?.data?.product || []);
+
+    } catch (error) {
+      console.log("error", error);
+      toast.error(error?.message || "Unable to fetch cart");
+    }
+  };
+
+
+  const handleDelete = async (item) => {
+    try {
+      const payload = {
+        userid: userData.id,
+        productid: item.productid._id,
+        type: "delete"
+      };
+
+      const res = await dispatch(cartList(payload)).unwrap();
+
+      if (res?.status === true || res?.success === true) {
+        setCartProducts((prev) =>
+          prev.filter((product) => product._id !== item._id)
         );
 
-        const variant = product?.variants?.find(
-          (v) => String(v.id) === variantId
-        );
+        onBagCountChange?.();
 
-        if (!product || !variant) return null;
+        toast.success("Product removed from cart");
+      }
 
-        return {
-          key,
-          product,
-          variant,
-          qty: Number(qty),
-        };
-      })
-      .filter(Boolean);
-  }, [cart]);
+    } catch (error) {
+      console.log("error", error);
+      toast.error(error?.message || "Unable to remove product");
+    }
+  };
 
 
 
@@ -60,7 +330,7 @@ export default function CartModal({
           >
             <GripHorizontal size={23} strokeWidth={1.3} />
           </div>
-          
+
           <button
             type="button"
             onClick={onClose}
@@ -118,7 +388,7 @@ export default function CartModal({
 
       <header className="shrink-0 border-b border-line px-6 pb-4 pt-3 max-[768px]:px-3 max-[768px]:pt-4">
         <div className="mb-2 flex items-start justify-end gap-2">
-  
+
           <div
             data-drag-handle
             className="flex cursor-grab touch-none justify-center rounded-full p-2 text-mocha/60 transition hover:bg-[#F2EAE0] active:cursor-grabbing"
@@ -157,7 +427,7 @@ export default function CartModal({
         <div className="divide-y divide-line">
           {lines.map(({ key, product: p, variant, qty }) => (
             <article key={key} className="flex gap-3 py-5 sm:gap-4">
-      
+
               <div className="h-[100px] w-[88px] shrink-0 overflow-hidden rounded-md bg-[#f1e8dc] sm:h-[112px] sm:w-[100px]">
                 <img
                   src={p.image}
@@ -194,7 +464,7 @@ export default function CartModal({
                   </p>
                 </div>
 
-     
+
                 <div className="mt-3 flex items-center justify-between">
                   <div className="flex h-8 items-center rounded-md border border-line">
                     <button
@@ -222,14 +492,29 @@ export default function CartModal({
                     </button>
                   </div>
 
+                  {/* <button
+                    type="button"
+                    onClick={() => handleDelete(key)}
+                    className="flex size-8 items-center justify-center rounded-full text-muted hover:bg-[#f4e6df] hover:text-rose"
+                    aria-label={`Remove ${p.name}`}
+                  >
+                    <Trash2 size={14} strokeWidth={1.4} />
+                  </button> */}
+
+
                   <button
                     type="button"
-                    onClick={() => onRemove(key)}
+                    onClick={() => handleDelete(
+                      cartProducts.find((item) => item._id === key)
+                    )}
                     className="flex size-8 items-center justify-center rounded-full text-muted hover:bg-[#f4e6df] hover:text-rose"
                     aria-label={`Remove ${p.name}`}
                   >
                     <Trash2 size={14} strokeWidth={1.4} />
                   </button>
+
+
+
                 </div>
               </div>
             </article>
@@ -277,9 +562,7 @@ export default function CartModal({
 
         <button
           type="button"
-          onClick={() =>
-            alert("Store preview: connect a checkout and payment backend.")
-          }
+          onClick={handlePay}
           className="mt-4 flex h-12 w-full items-center justify-center gap-2 bg-mocha text-[11px] font-medium tracking-wide text-white transition hover:bg-[#59412e]"
         >
           PROCEED TO CHECKOUT
