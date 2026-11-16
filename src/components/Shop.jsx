@@ -1,19 +1,10 @@
 import { useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import ProductCard from "./ProductCard.jsx";
+import { useAppContext } from "../context/AppContext.jsx";
 
-export default function Shop({
-  category,
-  onCategory,
-  search,
-  onSearch,
-  products,
-  categories = ["All products"],
-  wishlist,
-  onAdd,
-  onToggleWish,
-  onView,
-}) {
+export default function Shop() {
+  const { category, setCategory: onCategory, search, setSearch: onSearch, visibleProducts: products, categories, wishlist } = useAppContext();
   const tabsRef = useRef(null);
 
   // keep the selected pill in view when it changes
@@ -90,10 +81,7 @@ export default function Shop({
             <ProductCard
               key={p.id}
               product={p}
-              saved={wishlist.includes(p.id)}
-              onAdd={onAdd}
-              onToggleWish={onToggleWish}
-              onView={onView}
+              saved={wishlist.includes(String(p.id))}
             />
           ))
         ) : (

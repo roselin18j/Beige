@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
 import { toast } from "sonner";
 import { createOrder, verifyPayment } from "../../redux/slices/commonSlice.jsx";
+import { useAppContext } from "../../context/AppContext.jsx";
 
 
 
@@ -40,15 +41,8 @@ const loadRazorpay = () => {
 
 
 
-export default function CartModal({
-  cart,
-  products = [],
-  onRemove,
-  onUpdateQuantity,
-  onClose,
-  onExplore,
-  onBagCountChange,
-}) {
+export default function CartModal() {
+  const { cart, products, removeFromCart: onRemove, updateCartQuantity: onUpdateQuantity, close: onClose, GetBagCount: onBagCountChange } = useAppContext();
 
   const [cartProducts, setCartProducts] = useState([]);
   const userData = useSelector(selectAuthUser);
@@ -350,13 +344,28 @@ export default function CartModal({
             Find a little something you love.
           </p>
 
-          <button
+          {/* <button
             type="button"
             onClick={onExplore ?? onClose}
             className="mt-6 bg-mocha px-6 py-3 text-xs font-medium text-white transition hover:bg-[#59412e]"
           >
             Explore products
+          </button> */}
+
+
+          <button
+            type="button"
+            onClick={() => {
+              onClose?.();
+              navigate("/products");
+            }}
+            className="mt-6 bg-mocha px-6 py-3 text-xs font-medium text-white transition hover:bg-[#59412e]"
+          >
+            Explore products
           </button>
+
+
+
         </div>
       </div>
     );

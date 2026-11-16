@@ -3,6 +3,7 @@ import { X, Camera, Upload, ImagePlus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { env } from "../../utils/env";
 import { isVideoFile, validateMediaFile } from "../../utils/mediaUpload.js";
+import { useAppContext } from "../../context/AppContext.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { makeupBaseAnalyze } from "../../redux/slices/aiSlice.jsx";
 
@@ -26,10 +27,10 @@ const foundationShades = [
 
 
 export default function TryOnModal({
-  onClose,
   onGenerate,
   aiAvailable = true,
 }) {
+  const { close: onClose } = useAppContext();
   const inputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);

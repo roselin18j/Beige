@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { selectAuthUser, selectIsLogin } from "../redux/slices/authSlices.jsx";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "sonner";
+import { useAppContext } from "../context/AppContext.jsx";
 
 
 export function ProductArt({ product }) {
@@ -22,13 +23,8 @@ export function ProductArt({ product }) {
   );
 }
 
-export default function ProductCard({
-  product: p,
-  saved,
-  onAdd,
-  onToggleWish,
-  onView,
-}) {
+export default function ProductCard({ product: p, saved }) {
+  const { open, toggleWishlist } = useAppContext();
   const startingPrice = Math.min(
     ...p.variants.map((variant) => variant.price)
   );
@@ -61,7 +57,7 @@ export default function ProductCard({
       const res = await dispatch(Wishlist(payload)).unwrap();
 
 
-      onToggleWish(p.id);
+      toggleWishlist(p.id);
 
     } catch (error) {
       console.log("error", error);
@@ -74,7 +70,7 @@ export default function ProductCard({
       <div className="relative overflow-hidden">
         <button
           type="button"
-          onClick={() => onView(p.id)}
+          onClick={() => open("product", p.id)}
           aria-label={`View ${p.name}`}
           className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-[#f1e8dc]"
         >
@@ -119,7 +115,7 @@ export default function ProductCard({
       {/* Name */}
       <button
         type="button"
-        onClick={() => onView(p.id)}
+        onClick={() => open("product", p.id)}
         className="mt-1 block w-full text-left font-serif text-[13px] leading-snug text-ink transition-colors hover:text-mocha"
       >
         {p.name}
@@ -161,7 +157,7 @@ export default function ProductCard({
 
         <button
           type="button"
-          onClick={() => onAdd(p.id)}
+          onClick={() => open("product", p.id)}
           className="flex items-center gap-1 whitespace-nowrap text-[10px] text-muted transition-colors hover:text-mocha"
         >
           <ShoppingBag size={12} strokeWidth={1.5} />

@@ -15,6 +15,7 @@ import ProductModal from "./components/modals/ProductModal.jsx";
 import SkinTestModal from "./components/modals/SkinTestModal.jsx";
 import TryOnModal from "./components/modals/TryOnModal";
 import { useDispatch, useSelector } from "react-redux";
+import { AppProvider } from "./context/AppContext.jsx";
 import { Wishlist, cartList } from "./redux/slices/commonSlice.jsx";
 import {
   selectAuthUser,
@@ -106,11 +107,6 @@ export default function App() {
     email: "static@clariscosolutions.com",
     mobile: "",
   };
-
-
-
-
-
 
 
   useEffect(() => {
@@ -306,6 +302,30 @@ export default function App() {
     [products]
   );
 
+  const addSkinRecommendation = (recommendedProduct) => {
+    const productName = recommendedProduct?.productname;
+    if (typeof productName !== "string" || !productName.trim()) {
+      toast.error("This recommendation is missing its product name");
+      return false;
+    }
+    const product = products.find((item) => item.name.trim().toLowerCase() === productName.trim().toLowerCase());
+    if (!product) {
+      toast.error("Product is unavailable");
+      return false;
+    }
+    const success = addDefaultVariant(product.id, false);
+    if (success) toast.success("Added to cart successfully!", { description: product.name });
+    return success;
+  };
+
+  const contextValue = {
+    bagCount, wishlist, category, setCategory, search, setSearch,
+    products, visibleProducts, categories, cart, user,
+    modal, open, close, addToCart, addDefaultVariant, addWishlistDefaultVariant,
+    removeFromCart, updateCartQuantity, toggleWishlist, GetBagCount,
+    onSkinRecommendation: addSkinRecommendation, handleLogout, handleUpdateProfile,
+  };
+
 
 
   const renderModal = () => {
@@ -313,97 +333,29 @@ export default function App() {
 
       case "cart":
         return (
-          <CartModal
-            cart={cart}
-            products={products}
-            onRemove={removeFromCart}
-            onUpdateQuantity={updateCartQuantity}
-            onClose={close}
-            onBagCountChange={GetBagCount}
-          />
+          <CartModal />
         );
 
       case "account":
         return (
-          <WishlistModal
-            initialTab={modal.activeTab}
-            products={products}
-            user={user}
-            orders={orders}
-            wishlist={wishlist}
-            onAdd={addDefaultVariant}
-            onView={(id) => open("product", id)}
-            onToggleWish={toggleWishlist}
-            onClose={close}
-            onLogout={handleLogout}
-            onUpdateProfile={handleUpdateProfile}
-          />
+          <WishlistModal initialTab={modal.activeTab} />
         );
 
 
       case "product":
         return (
-          <ProductModal
-            productId={modal.productId}
-            products={products}
-            onBagCountChange={GetBagCount}
-            onClose={close}
-            onAdd={(productId, variantId, quantity) => {
-              const success = addToCart(
-                productId,
-                variantId,
-                quantity
-              );
-
-              if (success) {
-                open("cart");
-              }
-            }}
-          />
+          <ProductModal productId={modal.productId} />
         );
 
 
       case "skinTest":
         return (
-          <SkinTestModal
-            onClose={close}
-            onAdd={(recommendedProduct) => {
-              const productName = recommendedProduct?.productname;
-              if (typeof productName !== "string" || !productName.trim()) {
-                toast.error("This recommendation is missing its product name");
-                return false;
-              }
-
-              const product = products.find(
-                (item) =>
-                  item.name.trim().toLocaleLowerCase() ===
-                  productName.trim().toLocaleLowerCase()
-              );
-
-              if (!product) {
-                toast.error("Product is unavailable");
-                return false;
-              }
-
-              const success = addDefaultVariant(
-                product.id,
-                false
-              );
-
-              if (success) {
-                toast.success("Added to cart successfully!", {
-                  description: product.name,
-                });
-              }
-
-              return success;
-            }}
-          />
+          <SkinTestModal />
         );
 
 
       case "tryOn":
-        return <TryOnModal onClose={close} />;
+        return <TryOnModal />;
 
 
       default:
@@ -413,31 +365,15 @@ export default function App() {
 
 
   return (
-    <>
-      <Header
-        bagCount={bagCount}
-        wishCount={wishlist.length}
-        onCategory={setCategory}
-        onOpen={open}
-      />
+    <AppProvider value={contextValue}>
+      <Header />
 
       <main>
         <Hero />
 
         <ServiceStrip />
 
-        <Shop
-          category={category}
-          onCategory={setCategory}
-          search={search}
-          onSearch={setSearch}
-          products={visibleProducts}
-          categories={categories}
-          wishlist={wishlist}
-          onAdd={(id) => open("product", id)}
-          onToggleWish={toggleWishlist}
-          onView={(id) => open("product", id)}
-        />
+        <Shop />
 
         <Closing />
       </main>
@@ -462,6 +398,6 @@ export default function App() {
 
 
       <Toaster position="top-right" richColors />
-    </>
+    </AppProvider>
   );
 }
