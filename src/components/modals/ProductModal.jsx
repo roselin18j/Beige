@@ -7,8 +7,14 @@ import { useNavigate } from "react-router-dom";
 import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
 import { toast } from "sonner";
 import { cartList } from "../../redux/slices/commonSlice.jsx";
+import { useAppContext } from "../../context/AppContext.jsx";
 
-export default function ProductModal({ productId,onBagCountChange, products = [], onAdd, onClose }) {
+export default function ProductModal({ productId }) {
+  const { products, GetBagCount: onBagCountChange, close: onClose, addToCart, open } = useAppContext();
+  const onAdd = (id, variantId, quantity) => {
+    const success = addToCart(id, variantId, quantity);
+    if (success) open("cart");
+  };
   const product = products.find((p) => String(p.id) === String(productId));
 
   const [quantity, setQuantity] = useState(1);

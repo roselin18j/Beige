@@ -13,21 +13,13 @@ import { Wishlist, pastOrders } from "../../redux/slices/commonSlice.jsx";
 import { useDispatch, useSelector } from "react-redux";
 import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
 import { resetAuth } from "../../redux/slices/authSlices.jsx";
+import { useAppContext } from "../../context/AppContext.jsx";
 
 
-export default function WishlistModal({
-  initialTab = "wishlistModal",
-  user,
+export default function WishlistModal({ initialTab = "wishlistModal" }) {
+  const { user, wishlist, products, addDefaultVariant: onAdd, open, toggleWishlist: onToggleWish, close: onClose, handleLogout: onLogout, handleUpdateProfile: onUpdateProfile } = useAppContext();
+  const onView = (id) => open("product", id);
   //orders = [],
-  wishlist,
-  products = [],
-  onAdd,
-  onView,
-  onToggleWish,
-  onClose,
-  onLogout,
-  onUpdateProfile,
-}) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [fullName, setFullName] = useState(user?.name || "");
   const [mobile, setMobile] = useState(user?.mobile || "");
@@ -44,14 +36,15 @@ export default function WishlistModal({
   const userId = userData?._id || userData?.id;
 
 
-
-
-
   useEffect(() => {
-    if (userId) {
-      PastOrders();
+
+    if (!userId || !isLogin) {
+      setorders([]);
+      return;
     }
-  }, [userId]);
+    PastOrders();
+
+  }, [userId, isLogin, dispatch,]);
 
   const PastOrders = async () => {
     try {
@@ -226,13 +219,25 @@ export default function WishlistModal({
         {/* User details */}
         <div className="mt-3 max-[550px]:mt-2 border-t border-[#DFD2C2] pt-5 max-[550px]:pt-3">
           <p className="text-sm font-semibold">
-            Hello, {user?.name?.split(" ")[0] || "there"}
+            Hello, {userData?.name
+              ? userData.name.split(" ")[0]
+              : "Not Found"}
           </p>
 
           <p className="mt-1 break-all text-xs text-[#8B7967]">
-            {email}
+            {userData?.email || "Not Found"}
           </p>
         </div>
+
+
+
+
+
+
+
+
+
+
 
         {/* Tabs */}
         <div className="mt-6 flex border-b border-[#DFD2C2] max-[550px]:mt-5 max-[450px]:mt-4">
@@ -281,46 +286,69 @@ export default function WishlistModal({
               </p>
             </div>
 
-            <div className="border border-[#E7DCCF] bg-white p-5">
+            {userData?.username || userData?.email ? (
 
-              {/* Profile Icon */}
-              <div className="mb-5 flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F2EAE0] text-xl font-medium uppercase text-[#72543D]">
-                  {(userData?.name || "U").charAt(0)}
+              <div className="border border-[#E7DCCF] bg-white p-5">
+
+                {/* Profile Icon */}
+                <div className="mb-5 flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#F2EAE0] text-xl font-medium uppercase text-[#72543D]">
+                    {(userData?.name || "U").charAt(0)}
+                  </div>
+
+                  <div>
+                    <h4 className="text-base font-medium text-[#3F352D]">
+                      {`${userData?.name || ""} ${userData?.lastname || ""}`.trim()}
+                    </h4>
+
+                    <p className="mt-1 text-xs text-[#8B7967]">
+                      Beige Member
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <h4 className="text-base font-medium text-[#3F352D]">
-                    {userData?.name || "User"}
-                  </h4>
-                  <p className="mt-1 text-xs text-[#8B7967]">
-                    Beige Member
-                  </p>
+                <div className="space-y-4 border-t border-[#E7DCCF] pt-5">
+
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-[#9A8775]">
+                      Full Name
+                    </p>
+                    <p className="mt-1 text-sm text-[#3F352D]">
+                      {`${userData?.name || ""} ${userData?.lastname || ""}`.trim() || "Not available"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-[#9A8775]">
+                      Email Address
+                    </p>
+                    <p className="mt-1 break-all text-sm text-[#3F352D]">
+                      {userData?.email || "Not available"}
+                    </p>
+                  </div>
+
                 </div>
               </div>
 
-              <div className="space-y-4 border-t border-[#E7DCCF] pt-5">
+            ) : (
 
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-[#9A8775]">
-                    Full Name
-                  </p>
-                  <p className="mt-1 text-sm text-[#3F352D]">
-                    {userData?.name || "Not available"}
-                  </p>
+              <div className="border border-[#E7DCCF] bg-white px-5 py-10 text-center">
+
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F2EAE0] text-xl text-[#72543D]">
+                  <span>U</span>
                 </div>
 
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-[#9A8775]">
-                    Email Address
-                  </p>
-                  <p className="mt-1 break-all text-sm text-[#3F352D]">
-                    {userData?.email || "Not available"}
-                  </p>
-                </div>
+                <h4 className="mt-4 text-base font-medium text-[#3F352D]">
+                  Profile Not Available
+                </h4>
+
+                <p className="mt-2 text-sm text-[#8B7967]">
+                  Your profile details are not available. Please complete your profile.
+                </p>
 
               </div>
-            </div>
+
+            )}
 
             {/* Logout */}
             <button

@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { selectAuthUser, selectIsLogin } from "../redux/slices/authSlices.jsx";
 import { Wishlist } from "../redux/slices/commonSlice.jsx";
 import { useDispatch, useSelector } from "react-redux";
+import { useAppContext } from "../context/AppContext.jsx";
 
 const headerNav = {
   SkinCare: "Skin care",
@@ -28,7 +29,9 @@ function Logo({ className = "" }) {
   );
 }
 
-export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
+export default function Header() {
+  const { bagCount, wishlist, open } = useAppContext();
+  const wishCount = wishlist.length;
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const closeMenu = () => setMenuOpen(false);
@@ -70,7 +73,7 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
 
   const openModal = (name) => {
     closeMenu();
-    onOpen(name);
+    open(name);
   };
 
   // lock page scroll while the drawer is open
@@ -126,7 +129,7 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
         <div className="flex items-center gap-3 sm:gap-[18px]">
           <button
             type="button"
-            onClick={() => onOpen("accountModal")}
+            onClick={() => open("accountModal")}
             aria-label="Login / Register"
             className="flex items-center gap-2 text-sm text-ink"
           >
@@ -140,7 +143,7 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
           <button
             type="button"
             aria-label="Wishlist"
-            onClick={() => onOpen("wishlistModal")}
+            onClick={() => open("wishlistModal")}
             className="flex items-center gap-[7px] text-xs text-ink"
           >
             <Heart size={21} strokeWidth={1.5} />
@@ -150,7 +153,7 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
           <button
             type="button"
             aria-label="Open bag"
-            onClick={() => onOpen("cart")}
+            onClick={() => open("cart")}
             className="flex items-center gap-[7px] text-xs text-ink"
           >
             <ShoppingBag size={19} strokeWidth={1.5} />
@@ -178,7 +181,7 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
 
         <button
           type="button"
-          onClick={() => onOpen("skinTest")}
+          onClick={() => open("skinTest")}
           className="text-sm font-medium text-ink underline underline-offset-[5px]"
         >
           Skin &amp; hair test
@@ -186,7 +189,7 @@ export default function Header({ bagCount, wishCount, onCategory, onOpen }) {
 
         <button
           type="button"
-          onClick={() => onOpen("tryOn")}
+          onClick={() => open("tryOn")}
           className="text-sm font-medium text-ink underline underline-offset-[5px]"
         >
           AI makeup try-on

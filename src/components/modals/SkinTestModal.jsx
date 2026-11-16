@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { isVideoFile, validateMediaFile } from "../../utils/mediaUpload.js";
 import { useDispatch, useSelector } from "react-redux";
 import { skinAnalyze } from "../../redux/slices/aiSlice.jsx";
+import { useAppContext } from "../../context/AppContext.jsx";
 
 
 const skinQuestions = [
@@ -59,7 +60,8 @@ const hairQuestions = [
 ];
 
 
-export default function SkinTestModal({ onClose, onAdd }) {
+export default function SkinTestModal() {
+  const { close: onClose, onSkinRecommendation: onAdd } = useAppContext();
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({});
   const [photo, setPhoto] = useState(null);
