@@ -1,13 +1,15 @@
-
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { LoginUser } from "../redux/slices/authSlices";
+import { LoginUser, resetAuth, selectIsLogin } from "../redux/slices/authSlices";
 import AuthLayout from "../components/auth/AuthLayout";
+
+
+
 
 const loginValidationSchema = Yup.object({
   email: Yup.string()
@@ -43,6 +45,13 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+
+
+  const loginStatus = useSelector(selectIsLogin);
+
+  console.log("selectIsLogin---", loginStatus);
+
+
   const formik = useFormik({
     initialValues: {
       email: "",
@@ -65,7 +74,7 @@ export default function Login() {
         ).unwrap();
 
 
- 
+
         toast.success(
           res?.message || "Registration successful! Please sign in."
         );
@@ -73,7 +82,7 @@ export default function Login() {
 
         navigate("/verify-otp", {
           state: {
-            name:"",
+            name: "",
             email: values.email.trim().toLowerCase(),
             password: values.password,
             type: "login"
@@ -91,6 +100,47 @@ export default function Login() {
     },
   });
 
+
+  const handleLogout = () => {
+    try {
+      dispatch(resetAuth());
+
+      toast.success("Logged out successfully!");
+    } catch (error) {
+      toast.error("Logout failed. Please try again.");
+    }
+  };
+
+
+  if (loginStatus) {
+    return (
+      <AuthLayout
+        title="Welcome back"
+        subtitle="You are already logged in."
+      >
+        <div className="space-y-4 text-center">
+          <p className="text-ink">You are already logged in.</p>
+
+          <Link
+            to="/register"
+            className="block w-full border border-mocha py-4 text-mocha transition hover:bg-mocha hover:text-white"
+          >
+            Register
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full bg-mocha py-4 text-white transition hover:bg-ink"
+          >
+            Logout
+          </button>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  // Original login UI (unchanged), shown when loginStatus is false
   return (
     <AuthLayout
       title="Welcome back"
