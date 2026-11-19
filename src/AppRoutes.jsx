@@ -8,6 +8,7 @@ import Register from "./pages/Register.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/Resetpassword.jsx";
 import VerifyOTP from "./pages/VerifyOTP";
+import Delivery from "./components/modals/Delivary.jsx";
 
 export default function AppRoutes() {
   return (
@@ -21,6 +22,8 @@ export default function AppRoutes() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-otp" element={<VerifyOTP />} />
+        <Route path="/Delivery" element={<Delivery />} />
+
       </Routes>
     </BrowserRouter>
   );
