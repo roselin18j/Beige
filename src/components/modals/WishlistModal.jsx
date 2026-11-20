@@ -7,16 +7,24 @@ import {
   ShoppingBag,
   Trash2,
   Package,
-  Truck, // added
-  ArrowLeft, // added
+  Truck,
+  ArrowLeft,
 } from "lucide-react";
-import { Wishlist, pastOrders, getDeliveryByOrderId } from "../../redux/slices/commonSlice.jsx"; // getDeliveryByOrderId added
+import {
+  Wishlist,
+  pastOrders,
+  getDeliveryByOrderId,
+  cartList
+} from "../../redux/slices/commonSlice.jsx";
+
+import { toast } from "sonner";
+
 import { useDispatch, useSelector } from "react-redux";
 import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
 import { resetAuth } from "../../redux/slices/authSlices.jsx";
 import { useAppContext } from "../../context/AppContext.jsx";
 
-// ===== added: helpers for shipping details =====
+
 const deliveryStatusStyle = {
   Ordered: "bg-gray-100 text-gray-700",
   Confirmed: "bg-blue-100 text-blue-700",
@@ -40,13 +48,24 @@ const formatDateTime = (date) => {
   if (!date) return "-";
   return new Date(date).toLocaleString("en-IN");
 };
-// ===============================================
 
 
 export default function WishlistModal({ initialTab = "wishlistModal" }) {
-  const { user, wishlist, products, addDefaultVariant: onAdd, open, toggleWishlist: onToggleWish, close: onClose, handleLogout: onLogout, handleUpdateProfile: onUpdateProfile } = useAppContext();
+  const {
+    user,
+    wishlist,
+    products,
+    addDefaultVariant: onAdd,
+    GetBagCount: onBagCountChange,
+    open,
+    toggleWishlist: onToggleWish,
+    close: onClose,
+    handleLogout: onLogout,
+    handleUpdateProfile: onUpdateProfile
+  } = useAppContext();
+
+
   const onView = (id) => open("product", id);
-  //orders = [],
   const [activeTab, setActiveTab] = useState(initialTab);
   const [fullName, setFullName] = useState(user?.name || "");
   const [mobile, setMobile] = useState(user?.mobile || "");
@@ -56,50 +75,119 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
   const dispatch = useDispatch();
   const [items, setitems] = useState([]);
   const [orders, setorders] = useState([])
-
-  // ===== added: shipping details state =====
   const [showDelivery, setShowDelivery] = useState(false);
   const [deliveryInfo, setDeliveryInfo] = useState(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryError, setDeliveryError] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState("");
-  // =========================================
-
   const userData = useSelector(selectAuthUser);
   const isLogin = useSelector(selectIsLogin);
-
   const userId = userData?._id || userData?.id;
 
 
-  useEffect(() => {
 
+
+  const handleAddToBag = async (product) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!isLogin || !token || !userId) {
+        toast.error("Please login");
+        return;
+      }
+
+      const selectedVariant = product.variants?.[0];
+
+      if (!selectedVariant?.id) {
+        toast.error("Product variant not available");
+        return;
+      } const handleAddToBag = async (product) => {
+        try {
+          const token = localStorage.getItem("token");
+
+          if (!isLogin || !token || !userId) {
+            toast.error("Please login");
+            return;
+          }
+
+          const selectedVariant = product.variants?.[0];
+
+          if (!selectedVariant?.id) {
+            toast.error("Product variant not available");
+            return;
+          }
+
+          const payload = {
+            userid: userId,
+            productid: product._id || product.id.split("-")[0],
+            variantid: selectedVariant.id,
+            quantity: 1,
+            type: "post"
+          };
+
+          await dispatch(cartList(payload)).unwrap();
+
+          onAdd?.(product.id);
+
+          onBagCountChange?.();
+
+          toast.success("Product added to bag");
+
+        } catch (error) {
+          console.log("Add to Bag Error:", error);
+          toast.error(error?.message || "Unable to add product to bag");
+        }
+      };
+
+      const payload = {
+        userid: userId,
+        productid: product._id || product.id.split("-")[0],
+        variantid: selectedVariant.id,
+        quantity: 1,
+        type: "post"
+      };
+
+      await dispatch(cartList(payload)).unwrap();
+
+      onAdd?.(product.id);
+      onBagCountChange?.();
+
+      toast.success("Product added to bag");
+
+    } catch (error) {
+      console.log("Add to Bag Error:", error);
+      toast.error(error?.message || "Unable to add product to bag");
+    }
+  };
+
+
+
+  useEffect(() => {
     if (!userId || !isLogin) {
       setorders([]);
       return;
     }
     PastOrders();
-
   }, [userId, isLogin, dispatch,]);
+
+
+
 
   const PastOrders = async () => {
     try {
       const payload = {
         userid: userId,
       };
-
       const res = await dispatch(pastOrders(payload)).unwrap();
-
       const OrdersDetails = res?.orderList || res?.data?.orderList || [];
-
       setorders(OrdersDetails);
 
     } catch (error) {
       console.log("Past Orders Error:", error);
-      setorders([]); // fixed: was setOrders (undefined)
+      setorders([]);
     }
   };
 
-  // ===== added: open shipping details for one order =====
   const handleViewDetails = async (orderId) => {
     try {
       setSelectedOrderId(orderId);
@@ -117,28 +205,22 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
       setDeliveryLoading(false);
     }
   };
-  // ======================================================
 
   const handleDelete = async (product) => {
     try {
-
       const payload = {
         type: "delete",
         userId: userId,
         email: userData?.email,
         productId: product.id
       };
-
       const res = await dispatch(Wishlist(payload)).unwrap();
-
       if (res?.status === true || res?.success === true) {
         setitems((items) =>
           items.filter((item) => String(item.id) !== String(product.id))
         );
-
         onToggleWish?.(product.id);
       }
-
     } catch (error) {
       console.log("error", error);
     }
@@ -158,19 +240,13 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
           userId: userId,
           email: userData?.email,
         };
-
         const res = await dispatch(Wishlist(payload)).unwrap();
-
         const wishlistRecords = res?.data || [];
-
         const wishlistProducts = products.filter((product) =>
           wishlistRecords.some(
             (item) => String(item.productId) === String(product.id)
           )
         );
-
-        console.log("Wishlist Products:", wishlistProducts);
-
         setitems(wishlistProducts);
       } catch (error) {
         console.log("error", error);
@@ -186,10 +262,6 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
   }, [userId, isLogin, dispatch, products]);
 
   const email = user?.email || "";
-
-
-
-
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
@@ -227,12 +299,11 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
     setActiveTab(tab);
     setError("");
     setSuccess("");
-    setShowDelivery(false); // added: leave shipping details when switching tabs
+    setShowDelivery(false);
   };
 
   const handleRefreshOrders = async () => {
     try {
-      // Replace with your actual API endpoint
       const response = await axios.get("/api/orders", {
         withCredentials: true,
       });
@@ -243,10 +314,12 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
     }
   };
 
+
   return (
+
+
     <div className="flex max-h-[90vh] flex-col bg-[#FFFDF9] text-[#3F352D]">
 
-      {/* Header */}
       <div className="shrink-0 px-6 pt-5 max-[991px]:px-3">
 
         <div className="flex items-center justify-between">
@@ -264,7 +337,6 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
           </button>
         </div>
 
-        {/* Drag handle */}
         <div
           data-drag-handle
           className="max-[550px]:hidden mt-1 flex cursor-grab touch-none justify-center text-mocha/60 active:cursor-grabbing"
@@ -272,7 +344,6 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
           <GripHorizontal size={20} strokeWidth={1.3} />
         </div>
 
-        {/* User details */}
         <div className="mt-3 max-[550px]:mt-2 border-t border-[#DFD2C2] pt-5 max-[550px]:pt-3">
           <p className="text-sm font-semibold">
             Hello, {userData?.name
@@ -286,16 +357,6 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
         </div>
 
 
-
-
-
-
-
-
-
-
-
-        {/* Tabs */}
         <div className="mt-6 flex border-b border-[#DFD2C2] max-[550px]:mt-5 max-[450px]:mt-4">
           {[
             { id: "accountModal", label: "Profile" },
@@ -321,15 +382,10 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
         </div>
       </div>
 
-      {/* Scrollable content */}
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-8 pt-5 max-[991px]:px-3">
 
 
 
-
-
-
-        {/* PROFILE TAB */}
         {activeTab === "accountModal" && (
           <div className="py-4">
 
@@ -419,8 +475,6 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
         )}
 
 
-
-        {/* ===== added: SHIPPING DETAILS VIEW ===== */}
         {activeTab === "pastOrderModal" && showDelivery && (
           <div>
             <button
@@ -506,13 +560,8 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
             )}
           </div>
         )}
-        {/* ===== end shipping details view ===== */}
 
 
-
-
-
-        {/* PAST ORDERS TAB */}
         {activeTab === "pastOrderModal" && !showDelivery && (
           <>
             <div className="mb-5 flex items-center justify-between">
@@ -714,10 +763,6 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
         )}
 
 
-
-
-
-        {/* WISHLIST TAB */}
         {activeTab === "wishlistModal" && (
           <div className="pb-4">
 
@@ -828,10 +873,19 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
                           </span>
                         </div>
 
-                        {/* Add to Bag */}
-                        <button
+                        {/* <button
                           type="button"
                           onClick={() => onAdd?.(product.id)}
+                          className="mt-5 flex w-full items-center justify-center gap-2 bg-[#72543D] py-3.5 text-xs tracking-widest text-white transition hover:bg-[#5D4330]"
+                        >
+                          <ShoppingBag size={15} strokeWidth={1.5} />
+                          ADD TO BAG
+                        </button> */}
+
+
+                        <button
+                          type="button"
+                          onClick={() => handleAddToBag(product)}
                           className="mt-5 flex w-full items-center justify-center gap-2 bg-[#72543D] py-3.5 text-xs tracking-widest text-white transition hover:bg-[#5D4330]"
                         >
                           <ShoppingBag size={15} strokeWidth={1.5} />
@@ -858,10 +912,6 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
 
           </div>
         )}
-
-
-
-
 
 
       </div>
