@@ -49,10 +49,6 @@ export const commonApi = {
   },
 
 
-
-
-
-
   getAllDeliveries: async (payload) => {
     return ApiRequest.get(
       `${env.api_base_url}${env.user_end_point}/all-deliveries`,
@@ -61,7 +57,7 @@ export const commonApi = {
 
   getDeliveryByOrderId: async (payload) => {
     return ApiRequest.get(
-      `${env.api_base_url}${env.user_end_point}/delivery/:orderId`,
+      `${env.api_base_url}${env.user_end_point}/delivery/${payload}`,
     );
   },
 
@@ -79,20 +75,20 @@ export const commonApi = {
     );
   },
 
-
-
   updateDeliveryStatus: async (payload) => {
     return ApiRequest.post(
       `${env.api_base_url}${env.user_end_point}/update-delivery/:orderId`,
       payload
     );
   },
+
   updateTrackingDetails: async (payload) => {
     return ApiRequest.post(
       `${env.api_base_url}${env.user_end_point}/update-tracking/:orderId`,
       payload
     );
   },
+  
   createDelivery: async (payload) => {
     return ApiRequest.post(
       `${env.api_base_url}${env.user_end_point}/create-delivery`,
@@ -116,28 +112,3 @@ export const commonApi = {
 
 
 
-
-
-
-
-
-
-
-
-
-
-export const deleteDelivery = createAsyncThunk(
-  "common/deleteDelivery",
-  async (payload, { rejectWithValue }) => {
-    try {
-      const res = await commonApi.deleteDelivery(payload);
-      return res;
-    } catch (err) {
-      return rejectWithValue(
-        err?.response?.data || {
-          message: err?.message || "Failed to fetch products."
-        }
-      );
-    }
-  }
-);

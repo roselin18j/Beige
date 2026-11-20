@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { money } from "../../data/products.js";
 import {
@@ -8,12 +7,40 @@ import {
   ShoppingBag,
   Trash2,
   Package,
+  Truck, // added
+  ArrowLeft, // added
 } from "lucide-react";
-import { Wishlist, pastOrders } from "../../redux/slices/commonSlice.jsx";
+import { Wishlist, pastOrders, getDeliveryByOrderId } from "../../redux/slices/commonSlice.jsx"; // getDeliveryByOrderId added
 import { useDispatch, useSelector } from "react-redux";
 import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
 import { resetAuth } from "../../redux/slices/authSlices.jsx";
 import { useAppContext } from "../../context/AppContext.jsx";
+
+// ===== added: helpers for shipping details =====
+const deliveryStatusStyle = {
+  Ordered: "bg-gray-100 text-gray-700",
+  Confirmed: "bg-blue-100 text-blue-700",
+  Processing: "bg-indigo-100 text-indigo-700",
+  Shipped: "bg-amber-100 text-amber-700",
+  "Out for Delivery": "bg-orange-100 text-orange-700",
+  Delivered: "bg-green-100 text-green-700",
+  Cancelled: "bg-red-100 text-red-700",
+};
+
+const formatDate = (date) => {
+  if (!date) return "-";
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatDateTime = (date) => {
+  if (!date) return "-";
+  return new Date(date).toLocaleString("en-IN");
+};
+// ===============================================
 
 
 export default function WishlistModal({ initialTab = "wishlistModal" }) {
@@ -29,6 +56,14 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
   const dispatch = useDispatch();
   const [items, setitems] = useState([]);
   const [orders, setorders] = useState([])
+
+  // ===== added: shipping details state =====
+  const [showDelivery, setShowDelivery] = useState(false);
+  const [deliveryInfo, setDeliveryInfo] = useState(null);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [deliveryError, setDeliveryError] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState("");
+  // =========================================
 
   const userData = useSelector(selectAuthUser);
   const isLogin = useSelector(selectIsLogin);
@@ -60,9 +95,29 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
 
     } catch (error) {
       console.log("Past Orders Error:", error);
-      setOrders([]);
+      setorders([]); // fixed: was setOrders (undefined)
     }
   };
+
+  // ===== added: open shipping details for one order =====
+  const handleViewDetails = async (orderId) => {
+    try {
+      setSelectedOrderId(orderId);
+      setDeliveryInfo(null);
+      setDeliveryError("");
+      setDeliveryLoading(true);
+      setShowDelivery(true);
+
+      const res = await dispatch(getDeliveryByOrderId(orderId)).unwrap();
+
+      setDeliveryInfo(res?.data || null);
+    } catch (err) {
+      setDeliveryError(err?.message || "Shipping details are not available yet.");
+    } finally {
+      setDeliveryLoading(false);
+    }
+  };
+  // ======================================================
 
   const handleDelete = async (product) => {
     try {
@@ -172,6 +227,7 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
     setActiveTab(tab);
     setError("");
     setSuccess("");
+    setShowDelivery(false); // added: leave shipping details when switching tabs
   };
 
   const handleRefreshOrders = async () => {
@@ -364,92 +420,100 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
 
 
 
+        {/* ===== added: SHIPPING DETAILS VIEW ===== */}
+        {activeTab === "pastOrderModal" && showDelivery && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowDelivery(false)}
+              className="mb-5 flex items-center gap-2 text-xs text-[#72543D] hover:underline"
+            >
+              <ArrowLeft size={15} />
+              Back to orders
+            </button>
 
+            <h3 className="mb-1 text-[17px] font-medium">Shipping details</h3>
+            <p className="mb-5 break-all text-xs text-[#8B7967]">
+              Order ID: {selectedOrderId}
+            </p>
 
-
-
-
-
-
-        {/* PAST ORDERS TAB */}
-        {/* {activeTab === "pastOrderModal" && (
-          <>
-            <div className="flex items-center justify-between">
-              <h3 className="text-[17px] max-[550px]:text-[15px] max-[450px]:text-[14px]">
-                Your past orders
-              </h3>
-
-              <button
-                type="button"
-                onClick={handleRefreshOrders}
-                className="text-xs underline underline-offset-4"
-              >
-                Refresh
-              </button>
-            </div>
-
-            {orders.length === 0 ? (
-              <div className="flex min-h-[280px] flex-col items-center justify-center text-center">
-
-                <ShoppingBag
-                  size={34}
-                  strokeWidth={1.5}
-                  className="mb-3 text-[#3F352D]"
-                />
-
-                <p className="text-[17px] font-semibold max-[550px]:text-[15px] max-[450px]:text-[14px]">
-                  No orders yet
+            {deliveryLoading ? (
+              <div className="py-12 text-center text-sm text-[#8B7967]">
+                Loading shipping details...
+              </div>
+            ) : deliveryError || !deliveryInfo ? (
+              <div className="border border-[#E7DCCF] bg-white px-5 py-10 text-center">
+                <Truck size={30} strokeWidth={1.4} className="mx-auto mb-3 text-[#72543D]" />
+                <p className="text-sm text-[#51463C]">
+                  {deliveryError || "Shipping details are not available yet."}
                 </p>
-
-                <p className="mt-2 max-w-sm text-sm leading-6 text-[#51463C]">
-                  Your orders will appear here when you check out while signed in.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="mt-7 bg-[#72543D] px-7 py-4 max-[991px]:px-4 text-xs text-white transition hover:bg-[#5D4330]"
-                >
-                  Explore products
-                </button>
               </div>
             ) : (
-              <div className="mt-5 space-y-4">
-                {orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="border border-[#E7DCCF] p-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">
-                        Order #{order.id}
-                      </p>
-
-                      <span className="text-xs text-[#8B7967]">
-                        {order.status}
-                      </span>
-                    </div>
-
-                    <p className="mt-2 text-xs text-[#8B7967]">
-                      {order.date}
-                    </p>
-
-                    <p className="mt-3 text-sm font-medium">
-                      {money(order.total)}
-                    </p>
+              <div className="border border-[#E7DCCF] bg-white p-5">
+                <div className="grid grid-cols-1 gap-5 border-b border-[#E7DCCF] pb-5 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs text-[#9A8775]">Delivery Status</p>
+                    <span
+                      className={`mt-2 inline-block px-3 py-1 text-xs ${deliveryStatusStyle[deliveryInfo.deliveryStatus] || "bg-gray-100 text-gray-700"
+                        }`}
+                    >
+                      {deliveryInfo.deliveryStatus}
+                    </span>
                   </div>
-                ))}
+
+                  <div>
+                    <p className="text-xs text-[#9A8775]">Tracking Number</p>
+                    <p className="mt-1 break-all text-sm">{deliveryInfo.trackingNumber || "-"}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-[#9A8775]">Courier</p>
+                    <p className="mt-1 text-sm">{deliveryInfo.courierName || "-"}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-[#9A8775]">Shipped Date</p>
+                    <p className="mt-1 text-sm">{formatDateTime(deliveryInfo.shippedDate)}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-[#9A8775]">Expected Delivery</p>
+                    <p className="mt-1 text-sm">{formatDate(deliveryInfo.estimatedDeliveryDate)}</p>
+                  </div>
+
+                  {deliveryInfo.deliveryRemarks && (
+                    <div>
+                      <p className="text-xs text-[#9A8775]">Remarks</p>
+                      <p className="mt-1 text-sm">{deliveryInfo.deliveryRemarks}</p>
+                    </div>
+                  )}
+                </div>
+
+                <h4 className="mb-5 mt-6 text-sm font-semibold">Delivery History</h4>
+
+                <div className="ml-2 border-l border-[#E7DCCF] pl-6">
+                  {[...(deliveryInfo.statusHistory || [])].reverse().map((history, index) => (
+                    <div key={history._id || index} className="relative mb-6">
+                      <div className="absolute -left-[31px] top-1 h-3 w-3 rounded-full border-2 border-[#72543D] bg-white" />
+
+                      <h5 className="text-sm font-semibold">{history.deliveryStatus}</h5>
+                      <p className="mt-1 text-sm text-[#8B7967]">{history.message}</p>
+                      <p className="mt-1 text-xs text-[#9A8775]">{formatDateTime(history.updatedAt)}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-          </>
-        )} */}
+          </div>
+        )}
+        {/* ===== end shipping details view ===== */}
 
 
 
 
 
         {/* PAST ORDERS TAB */}
-        {activeTab === "pastOrderModal" && (
+        {activeTab === "pastOrderModal" && !showDelivery && (
           <>
             <div className="mb-5 flex items-center justify-between">
               <div>
@@ -504,9 +568,21 @@ export default function WishlistModal({ initialTab = "wishlistModal" }) {
                         </p>
                       </div>
 
-                      <span className="bg-[#E9DFD3] px-3 py-1.5 text-xs text-[#72543D]">
-                        {order.deliveryStatus || order.productStatus}
-                      </span>
+                      {/* changed: status badge + View details button */}
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#E9DFD3] px-3 py-1.5 text-xs text-[#72543D]">
+                          {order.deliveryStatus || order.productStatus}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleViewDetails(order.orderId)}
+                          className="flex items-center gap-1.5 border border-[#72543D] px-3 py-1.5 text-xs text-[#72543D] transition hover:bg-[#72543D] hover:text-white"
+                        >
+                          <Truck size={14} strokeWidth={1.6} />
+                          View details
+                        </button>
+                      </div>
                     </div>
 
                     {/* Order Information */}
