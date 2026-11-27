@@ -10,15 +10,16 @@ import {
 } from "lucide-react";
 
 import { money, FREE_SHIPPING_THRESHOLD } from "../../data/products.js";
-import { cartList } from "../../redux/slices/commonSlice.jsx"
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { selectAuthUser, selectIsLogin } from "../../redux/slices/authSlices.jsx";
 import { toast } from "sonner";
-import { createOrder, verifyPayment } from "../../redux/slices/commonSlice.jsx";
+import {
+  cartList,
+  createOrder,
+  verifyPayment,
+} from "../../redux/slices/commonSlice.jsx";
 import { useAppContext } from "../../context/AppContext.jsx";
-
-
 
 const loadRazorpay = () => {
   return new Promise((resolve) => {
@@ -28,233 +29,66 @@ const loadRazorpay = () => {
     }
 
     const script = document.createElement("script");
-
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
-
     script.onload = () => resolve(true);
     script.onerror = () => resolve(false);
-
     document.body.appendChild(script);
   });
 };
 
-
-
 export default function CartModal() {
-  const { cart, products, removeFromCart: onRemove, updateCartQuantity: onUpdateQuantity, close: onClose, GetBagCount: onBagCountChange } = useAppContext();
+  const {
+    updateCartQuantity: onUpdateQuantity,
+    close: onClose,
+    GetBagCount: onBagCountChange,
+  } = useAppContext();
 
   const [cartProducts, setCartProducts] = useState([]);
+  const [needAddress, setNeedAddress] = useState(false);
+  const [addr, setAddr] = useState({ name: "", mobile: "", address: "" });
+
   const userData = useSelector(selectAuthUser);
   const isLogin = useSelector(selectIsLogin);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const handlePay = async () => {
-    try {
-      if (!isLogin || !userData?.id) {
-        toast.error("Please login first");
-        navigate("/login");
-        return;
-      }
-
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        toast.error("Session expired. Please login again.");
-        navigate("/login");
-        return;
-      }
-
-      if (!lines.length) {
-        toast.error("Your cart is empty");
-        return;
-      }
-
-      const isLoaded = await loadRazorpay();
-
-      if (!isLoaded || !window.Razorpay) {
-        toast.error("Unable to load Razorpay checkout");
-        return;
-      }
-
-      const totalAmount = lines.reduce((total, item) => {
-        return total + item.variant.price * item.qty;
-      }, 0);
-
-      if (totalAmount <= 0) {
-        toast.error("Invalid payment amount");
-        return;
-      }
-
-      const orderResponse = await dispatch(
-        createOrder({
-          amount: totalAmount,
-          userId: userData.id
-        })
-      ).unwrap();
-
-
-      const razorpayOrderData = orderResponse?.data || orderResponse;
-
-      if (!razorpayOrderData?.success || !razorpayOrderData?.order?.id) {
-        toast.error(
-          razorpayOrderData?.message || "Unable to create payment order"
-        );
-        return;
-      }
-
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-        amount: razorpayOrderData.order.amount,
-        currency: razorpayOrderData.order.currency,
-        name: "NEWME",
-        description: "Beauty and Skincare Products",
-        order_id: razorpayOrderData.order.id,
-
-        handler: async function (response) {
-          try {
-
-            const orderData = {
-              product: lines.map(item => ({
-                productid: item.product.id,
-                category: item.category,
-                productname: item.product.name,
-                productimages: item.product.image,
-
-                productdetails: [{
-                  price: item.variant.price,
-                  gstPrice: item.variant.gstPrice,
-                  size: item.variant.size,
-                  shade: item.variant.shade,
-                  quantity: item.qty,
-                  discount_price: item.variant.discount_price
-                }]
-              })),
-
-
-              delivery_Address: {
-                name: userData.name,
-                mobile: userData.mobile,
-                email: userData.email,
-                address: userData.address
-              },
-
-              productStatus: "Ordered",
-              shippingCharge: 0,
-              gstPercentage: 0,
-              totalDiscount: 0,
-              barcode: "",
-              couponDiscount: 0,
-              couponDiscountAmount: 0,
-              promoCode: "",
-              deliveryDate: null
-            };
-
-            const payload = {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              userid: userData.id,
-              orderData: orderData
-            };
-
-
-            const verifyResponse = await dispatch(
-              verifyPayment(payload)
-            ).unwrap();
-
-
-            const verifyData = verifyResponse?.data || verifyResponse;
-
-            if (verifyData?.success) {
-              toast.success("Payment successful!");
-
-              await GetCart();
-              onBagCountChange?.();
-              onClose?.();
-
-            } else {
-              toast.error(
-                verifyData?.message || "Payment verification failed"
-              );
-            }
-
-          } catch (error) {
-            console.log("Verification Error:", error);
-
-            toast.error(
-              error?.message || "Unable to verify payment"
-            );
-          }
-        },
-
-        modal: {
-          ondismiss: function () {
-            console.log("Razorpay checkout closed");
-          }
-        },
-
-        theme: {
-          color: "#8B5E3C"
-        }
-      };
-
-      const razorpay = new window.Razorpay(options);
-
-      razorpay.on("payment.failed", function (response) {
-        console.log("Payment Failed:", response.error);
-
-        toast.error(
-          response.error?.description || "Payment failed"
-        );
-      });
-
-      razorpay.open();
-
-    } catch (error) {
-      console.log("Payment Error:", error);
-
-      toast.error(
-        error?.message || "Unable to process payment"
-      );
-    }
-  };
-
-
-
-
-
-
+  /* ------------------------------------------------------------------
+     Cart lines (null-safe: skips items whose product was deleted)
+  ------------------------------------------------------------------ */
   const lines = useMemo(() => {
-    return cartProducts.map((item) => {
-      const product = item.productid;
+    return (cartProducts || [])
+      .filter((item) => item && item.productid)
+      .map((item) => {
+        const product = item.productid;
+        const price = Number(product.final_price || product.price || 0);
 
-      return {
-        key: item._id,
-        product: {
-          id: product._id,
-          name: product.productname,
-          image: product.productimages?.[0]?.media || "",
-        },
-        variant: {
-          id: product._id,
-          price: Number(product.final_price || product.price || 0),
-          label: "",
-          color: null,
-        },
-        qty: Number(item.quantity || 1),
-      };
-    });
+        return {
+          key: item._id,
+          category: product.category || "",
+          product: {
+            id: product._id,
+            name: product.productname,
+            image: product.productimages?.[0]?.media || "",
+          },
+          variant: {
+            id: product._id,
+            price,
+            gstPrice: Number(product.gstPrice || 0),
+            size: product.size || "",
+            shade: product.shade || "",
+            discount_price: Number(product.discount_price || 0),
+            label: "",
+            color: null,
+          },
+          qty: Number(item.quantity || 1),
+        };
+      });
   }, [cartProducts]);
 
-  useEffect(() => {
-    if (isLogin && userData?.id) {
-      GetCart();
-    }
-  }, [isLogin, userData?.id]);
-
-
+  /* ------------------------------------------------------------------
+     Fetch cart
+  ------------------------------------------------------------------ */
   const GetCart = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -265,51 +99,253 @@ export default function CartModal() {
         return;
       }
 
-      const payload = {
-        userid: userData.id,
-        type: "get"
-      };
+      const res = await dispatch(
+        cartList({ userid: userData.id, type: "get" })
+      ).unwrap();
 
-      const res = await dispatch(cartList(payload)).unwrap();
-
-
-      setCartProducts(res?.data?.product || []);
-
+      // drop null items / items whose product no longer exists
+      setCartProducts(
+        (res?.data?.product || []).filter((i) => i && i.productid)
+      );
     } catch (error) {
       console.log("error", error);
       toast.error(error?.message || "Unable to fetch cart");
     }
   };
 
+  useEffect(() => {
+    if (isLogin && userData?.id) {
+      GetCart();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLogin, userData?.id]);
 
+  /* ------------------------------------------------------------------
+     Delete item
+  ------------------------------------------------------------------ */
   const handleDelete = async (item) => {
+    if (!item?.productid?._id) return;
+
     try {
       const payload = {
         userid: userData.id,
         productid: item.productid._id,
-        type: "delete"
+        type: "delete",
       };
 
       const res = await dispatch(cartList(payload)).unwrap();
 
       if (res?.status === true || res?.success === true) {
-        setCartProducts((prev) =>
-          prev.filter((product) => product._id !== item._id)
-        );
-
+        setCartProducts((prev) => prev.filter((p) => p._id !== item._id));
         onBagCountChange?.();
-
         toast.success("Product removed from cart");
       }
-
     } catch (error) {
       console.log("error", error);
       toast.error(error?.message || "Unable to remove product");
     }
   };
 
+  /* ------------------------------------------------------------------
+     Quantity change (updates local list so the UI reflects it)
+  ------------------------------------------------------------------ */
+  const handleQuantity = (key, nextQty) => {
+    setCartProducts((prev) =>
+      prev.map((p) => (p._id === key ? { ...p, quantity: nextQty } : p))
+    );
+    onUpdateQuantity?.(key, nextQty);
+  };
 
+  /* ------------------------------------------------------------------
+     Delivery address (from userData; form values override if typed)
+  ------------------------------------------------------------------ */
+  const getDeliveryAddress = () => ({
+    name: (
+      addr.name ||
+      [userData?.username, userData?.lastname].filter(Boolean).join(" ") ||
+      userData?.name ||
+      ""
+    ).trim(),
+    mobile: (addr.mobile || userData?.mobile || "").trim(),
+    email: userData?.email || "",
+    address: (
+      addr.address ||
+      userData?.default_address ||
+      userData?.address ||
+      userData?.other_address?.[0]?.address ||
+      ""
+    ).trim(),
+  });
 
+  /* ------------------------------------------------------------------
+     Payment
+  ------------------------------------------------------------------ */
+  const handlePay = async () => {
+    try {
+      if (!isLogin || !userData?.id) {
+        toast.error("Please login first");
+        navigate("/login");
+        return;
+      }
+
+      if (!localStorage.getItem("token")) {
+        toast.error("Session expired. Please login again.");
+        navigate("/login");
+        return;
+      }
+
+      if (!lines.length) {
+        toast.error("Your cart is empty");
+        return;
+      }
+
+      // Validate the address BEFORE taking payment
+      const deliveryAddress = getDeliveryAddress();
+
+      if (
+        !deliveryAddress.name ||
+        !deliveryAddress.mobile ||
+        !deliveryAddress.address
+      ) {
+        setNeedAddress(true);
+        toast.error("Please enter your delivery details to continue");
+        return;
+      }
+
+      const isLoaded = await loadRazorpay();
+
+      if (!isLoaded || !window.Razorpay) {
+        toast.error("Unable to load Razorpay checkout");
+        return;
+      }
+
+      const totalAmount = lines.reduce(
+        (total, item) => total + item.variant.price * item.qty,
+        0
+      );
+
+      if (totalAmount <= 0) {
+        toast.error("Invalid payment amount");
+        return;
+      }
+
+      const orderResponse = await dispatch(
+        createOrder({ amount: totalAmount, userId: userData.id })
+      ).unwrap();
+
+      // Works whether unwrap() returns the full body {success, data}
+      // or only the inner data object
+      const rpOrder = orderResponse?.data?.razorpayOrderId
+        ? orderResponse.data
+        : orderResponse;
+
+      if (!rpOrder?.razorpayOrderId) {
+        toast.error(orderResponse?.message || "Unable to create payment order");
+        return;
+      }
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: rpOrder.amount, // already in paise from backend
+        currency: rpOrder.currency,
+        name: "NEWME",
+        description: "Beauty and Skincare Products",
+        order_id: rpOrder.razorpayOrderId,
+        prefill: {
+          name: deliveryAddress.name,
+          email: deliveryAddress.email,
+          contact: deliveryAddress.mobile,
+        },
+
+        handler: async function (response) {
+          try {
+            const orderData = {
+              product: lines.map((item) => ({
+                productid: item.product.id,
+                category: item.category,
+                productname: item.product.name,
+                productimages: item.product.image,
+                productdetails: [
+                  {
+                    price: item.variant.price,
+                    gstPrice: item.variant.gstPrice,
+                    size: item.variant.size,
+                    shade: item.variant.shade,
+                    quantity: item.qty,
+                    discount_price: item.variant.discount_price,
+                  },
+                ],
+              })),
+
+              delivery_Address: deliveryAddress,
+
+              productStatus: "Ordered",
+              shippingCharge: 0,
+              gstPercentage: 0,
+              totalDiscount: 0,
+              subtotal: totalAmount,
+              taxAmount: 0,
+              barcode: "",
+              couponDiscount: 0,
+              couponDiscountAmount: 0,
+              promoCode: "",
+              deliveryDate: null,
+            };
+
+            const verifyResponse = await dispatch(
+              verifyPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                userid: userData.id,
+                orderData,
+              })
+            ).unwrap();
+
+            const verifyData = verifyResponse?.data ?? verifyResponse;
+
+            if (verifyResponse?.success || verifyData?.success) {
+              toast.success("Payment successful!");
+              await GetCart();
+              onBagCountChange?.();
+              onClose?.();
+            } else {
+              toast.error(
+                verifyResponse?.message ||
+                  verifyData?.message ||
+                  "Payment verification failed"
+              );
+            }
+          } catch (error) {
+            console.log("Verification Error:", error);
+            toast.error(error?.message || "Unable to verify payment");
+          }
+        },
+
+        modal: {
+          ondismiss: () => console.log("Razorpay checkout closed"),
+        },
+
+        theme: { color: "#8B5E3C" },
+      };
+
+      const razorpay = new window.Razorpay(options);
+
+      razorpay.on("payment.failed", (response) => {
+        console.log("Payment Failed:", response.error);
+        toast.error(response.error?.description || "Payment failed");
+      });
+
+      razorpay.open();
+    } catch (error) {
+      console.log("Payment Error:", error);
+      toast.error(error?.message || "Unable to process payment");
+    }
+  };
+
+  /* ------------------------------------------------------------------
+     Empty state
+  ------------------------------------------------------------------ */
   if (lines.length === 0) {
     return (
       <div className="text-ink">
@@ -344,15 +380,6 @@ export default function CartModal() {
             Find a little something you love.
           </p>
 
-          {/* <button
-            type="button"
-            onClick={onExplore ?? onClose}
-            className="mt-6 bg-mocha px-6 py-3 text-xs font-medium text-white transition hover:bg-[#59412e]"
-          >
-            Explore products
-          </button> */}
-
-
           <button
             type="button"
             onClick={() => {
@@ -363,41 +390,35 @@ export default function CartModal() {
           >
             Explore products
           </button>
-
-
-
         </div>
       </div>
     );
   }
 
-
+  /* ------------------------------------------------------------------
+     Totals
+  ------------------------------------------------------------------ */
   const subtotal = lines.reduce(
     (sum, line) => sum + line.variant.price * line.qty,
     0
   );
 
-  const itemCount = lines.reduce(
-    (sum, line) => sum + line.qty,
-    0
-  );
+  const itemCount = lines.reduce((sum, line) => sum + line.qty, 0);
 
-  const remaining = Math.max(
-    FREE_SHIPPING_THRESHOLD - subtotal,
-    0
-  );
+  const remaining = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0);
 
-  const progress = Math.min(
-    (subtotal / FREE_SHIPPING_THRESHOLD) * 100,
-    100
-  );
+  const progress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
+  const inputCls =
+    "w-full rounded-md border border-line px-3 py-2 text-[12px] outline-none focus:border-mocha";
+
+  /* ------------------------------------------------------------------
+     Cart with items
+  ------------------------------------------------------------------ */
   return (
     <div className="flex max-h-[90vh] flex-col text-ink overflow-y-auto">
-
       <header className="shrink-0 border-b border-line px-6 pb-4 pt-3 max-[768px]:px-3 max-[768px]:pt-4">
         <div className="mb-2 flex items-start justify-end gap-2">
-
           <div
             data-drag-handle
             className="flex cursor-grab touch-none justify-center rounded-full p-2 text-mocha/60 transition hover:bg-[#F2EAE0] active:cursor-grabbing"
@@ -436,7 +457,6 @@ export default function CartModal() {
         <div className="divide-y divide-line">
           {lines.map(({ key, product: p, variant, qty }) => (
             <article key={key} className="flex gap-3 py-5 sm:gap-4">
-
               <div className="h-[100px] w-[88px] shrink-0 overflow-hidden rounded-md bg-[#f1e8dc] sm:h-[112px] sm:w-[100px]">
                 <img
                   src={p.image}
@@ -473,14 +493,11 @@ export default function CartModal() {
                   </p>
                 </div>
 
-
                 <div className="mt-3 flex items-center justify-between">
                   <div className="flex h-8 items-center rounded-md border border-line">
                     <button
                       type="button"
-                      onClick={() =>
-                        onUpdateQuantity(key, Math.max(qty - 1, 1))
-                      }
+                      onClick={() => handleQuantity(key, Math.max(qty - 1, 1))}
                       className="flex h-full w-8 items-center justify-center text-muted hover:bg-cream"
                       aria-label="Decrease quantity"
                     >
@@ -493,7 +510,7 @@ export default function CartModal() {
 
                     <button
                       type="button"
-                      onClick={() => onUpdateQuantity(key, qty + 1)}
+                      onClick={() => handleQuantity(key, qty + 1)}
                       className="flex h-full w-8 items-center justify-center text-muted hover:bg-cream"
                       aria-label="Increase quantity"
                     >
@@ -501,29 +518,16 @@ export default function CartModal() {
                     </button>
                   </div>
 
-                  {/* <button
-                    type="button"
-                    onClick={() => handleDelete(key)}
-                    className="flex size-8 items-center justify-center rounded-full text-muted hover:bg-[#f4e6df] hover:text-rose"
-                    aria-label={`Remove ${p.name}`}
-                  >
-                    <Trash2 size={14} strokeWidth={1.4} />
-                  </button> */}
-
-
                   <button
                     type="button"
-                    onClick={() => handleDelete(
-                      cartProducts.find((item) => item._id === key)
-                    )}
+                    onClick={() =>
+                      handleDelete(cartProducts.find((item) => item._id === key))
+                    }
                     className="flex size-8 items-center justify-center rounded-full text-muted hover:bg-[#f4e6df] hover:text-rose"
                     aria-label={`Remove ${p.name}`}
                   >
                     <Trash2 size={14} strokeWidth={1.4} />
                   </button>
-
-
-
                 </div>
               </div>
             </article>
@@ -568,6 +572,33 @@ export default function CartModal() {
             </strong>
           </div>
         </div>
+
+        {/* Shown only when the profile has no name / mobile / address */}
+        {needAddress && (
+          <div className="mt-4 space-y-2">
+            <input
+              type="text"
+              placeholder="Full name"
+              value={addr.name}
+              onChange={(e) => setAddr({ ...addr, name: e.target.value })}
+              className={inputCls}
+            />
+            <input
+              type="tel"
+              placeholder="Mobile number"
+              value={addr.mobile}
+              onChange={(e) => setAddr({ ...addr, mobile: e.target.value })}
+              className={inputCls}
+            />
+            <textarea
+              rows={3}
+              placeholder="Full delivery address with pincode"
+              value={addr.address}
+              onChange={(e) => setAddr({ ...addr, address: e.target.value })}
+              className={inputCls}
+            />
+          </div>
+        )}
 
         <button
           type="button"
