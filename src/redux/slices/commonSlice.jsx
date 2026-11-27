@@ -99,9 +99,7 @@ export const pastOrders = createAsyncThunk(
     }
 );
 
-// ==========================================
-// DELIVERY APIs
-// ==========================================
+
 
 export const getAllDeliveries = createAsyncThunk(
     "common/getAllDeliveries",
@@ -231,9 +229,7 @@ export const deleteDelivery = createAsyncThunk(
     }
 );
 
-// ==========================================
-// INITIAL STATE
-// ==========================================
+
 
 const initialState = {
     products: [],
